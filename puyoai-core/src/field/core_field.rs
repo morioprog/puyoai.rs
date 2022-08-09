@@ -1,8 +1,11 @@
 use color::PuyoColor;
 use column_puyo_list::ColumnPuyoList;
 use decision::Decision;
-use field::{self, BitField, FieldHeight, FieldIsEmpty};
+use field::{self, BitField, FieldHeight, FieldIsEmpty, PuyoPlainField};
 use frame;
+use kumipuyo::Kumipuyo;
+use position::Position;
+use rensa_result::RensaResult;
 
 use std;
 
@@ -17,6 +20,13 @@ impl CoreField {
         CoreField {
             field: BitField::new(),
             height: [0; 8],
+        }
+    }
+
+    pub fn from_bit_field(bf: &BitField) -> CoreField {
+        CoreField {
+            field: *bf,
+            height: bf.calculate_height(),
         }
     }
 
@@ -46,6 +56,10 @@ impl CoreField {
         self.height[x] as usize
     }
 
+    pub fn height_array(&self) -> &[i16; 8] {
+        &self.height
+    }
+
     pub fn is_color(&self, x: usize, y: usize, c: PuyoColor) -> bool {
         self.field.is_color(x, y, c)
     }
@@ -63,8 +77,16 @@ impl CoreField {
         self.field.is_all_cleared()
     }
 
+    pub fn is_dead(&self) -> bool {
+        !self.field.is_empty(3, 12)
+    }
+
     pub fn field(&self) -> &BitField {
         &self.field
+    }
+
+    pub fn field_mut(&mut self) -> &mut BitField {
+        &mut self.field
     }
 
     pub fn is_chigiri_decision(&self, decision: &Decision) -> bool {
@@ -211,6 +233,174 @@ impl CoreField {
 
         drop_frames
     }
+
+    pub fn drop_kumipuyo(&mut self, decision: &Decision, kumipuyo: &Kumipuyo) -> bool {
+        let x1 = decision.axis_x();
+        let x2 = decision.child_x();
+        let c1 = kumipuyo.axis();
+        let c2 = kumipuyo.child();
+
+        if decision.rot() == 2 {
+            if !self.drop_puyo_on_with_max_height(x2, c2, 14) {
+                return false;
+            }
+            if !self.drop_puyo_on_with_max_height(x1, c1, 13) {
+                // TODO: make this part into function (removePuyoFrom)
+                self.field.set_color(x2, self.height(x2), PuyoColor::EMPTY);
+                self.height[x2] -= 1;
+                return false;
+            }
+            return true;
+        }
+
+        if !self.drop_puyo_on_with_max_height(x1, c1, 13) {
+            return false;
+        }
+        if !self.drop_puyo_on_with_max_height(x2, c2, 14) {
+            // TODO: make this part into function (removePuyoFrom)
+            self.field.set_color(x1, self.height(x1), PuyoColor::EMPTY);
+            self.height[x1] -= 1;
+            return false;
+        }
+
+        true
+    }
+
+    pub fn drop_kumipuyo_force(&mut self, decision: &Decision, kumipuyo: &Kumipuyo) {
+        let x1 = decision.axis_x();
+        let x2 = decision.child_x();
+        let c1 = kumipuyo.axis();
+        let c2 = kumipuyo.child();
+
+        if decision.rot() == 2 {
+            self.drop_puyo_on_with_max_height(x2, c2, 14);
+            self.drop_puyo_on_with_max_height(x1, c1, 13);
+        } else {
+            self.drop_puyo_on_with_max_height(x1, c1, 13);
+            self.drop_puyo_on_with_max_height(x2, c2, 14);
+        }
+    }
+
+    pub fn update_height(&mut self) {
+        self.height = self.field.calculate_height()
+    }
+
+    pub fn count_connected(&self, x: usize, y: usize) -> usize {
+        self.field().count_connected(x, y)
+    }
+
+    pub fn rensa_will_occur_when_last_decision_is(&self, decision: &Decision) -> bool {
+        let p1 = Position::new(decision.axis_x(), self.height(decision.axis_x()));
+        if self.count_connected(p1.x, p1.y) >= 4 {
+            return true;
+        }
+
+        let p2 = match decision.rot() {
+            0 | 2 => Position::new(decision.axis_x(), self.height(decision.axis_x()) - 1),
+            1 => Position::new(decision.axis_x() + 1, self.height(decision.axis_x() + 1)),
+            3 => Position::new(decision.axis_x() - 1, self.height(decision.axis_x() - 1)),
+            _ => panic!(), // TODO: better error message
+        };
+        if self.count_connected(p2.x, p2.y) >= 4 {
+            return true;
+        }
+
+        false
+    }
+
+    pub fn simulate(&mut self) -> RensaResult {
+        let result = self.field_mut().simulate();
+
+        self.update_height();
+
+        result
+    }
+
+    pub fn simulate_fast(&mut self) -> usize {
+        let result = self.field_mut().simulate_fast();
+
+        self.update_height();
+
+        result
+    }
+
+    pub fn is_zenkeshi(&self) -> bool {
+        for x in 1..=field::WIDTH {
+            if self.height(x) > 0 {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    pub fn apply_gravity(&mut self) {
+        for x in 1..=field::WIDTH {
+            let mut puyos: Vec<PuyoColor> = vec![];
+            for y in 1..=field::HEIGHT + 1 {
+                let color = self.field.color(x, y);
+                if color != PuyoColor::EMPTY {
+                    puyos.push(color);
+                    self.field.set_color(x, y, PuyoColor::EMPTY);
+                }
+            }
+            for y in 1..=puyos.len() {
+                self.field.set_color(x, y, puyos[y - 1]);
+            }
+        }
+    }
+
+    pub fn ridge_height(&self, x: usize) -> usize {
+        let current_height = self.height(x);
+        let left_height = if x == 1 { 14 } else { self.height(x - 1) };
+        let right_height = if x == 6 { 14 } else { self.height(x + 1) };
+
+        let left = if current_height > left_height {
+            current_height - left_height
+        } else {
+            0
+        };
+        let right = if current_height > right_height {
+            current_height - right_height
+        } else {
+            0
+        };
+        left.min(right)
+    }
+
+    pub fn valley_depth(&self, x: usize) -> usize {
+        let current_height = self.height(x);
+        let left_height = if x == 1 { 14 } else { self.height(x - 1) };
+        let right_height = if x == 6 { 14 } else { self.height(x + 1) };
+
+        let left = if left_height > current_height {
+            left_height - current_height
+        } else {
+            0
+        };
+        let right = if right_height > current_height {
+            right_height - current_height
+        } else {
+            0
+        };
+        left.min(right)
+    }
+
+    pub fn count_unreachable_spaces(&self) -> usize {
+        let mut count = 0;
+
+        if self.height(2) >= 12 && self.height(1) < 12 {
+            count += 12 - self.height(1);
+        }
+        if self.height(4) >= 12 && self.height(5) < 12 {
+            count += 12 - self.height(5);
+        }
+        if (self.height(4) >= 12 || self.height(5) >= 12) && self.height(6) < 12 {
+            count += 12 - self.height(6);
+        }
+
+        count
+    }
 }
 
 impl FieldHeight for CoreField {
@@ -222,6 +412,26 @@ impl FieldHeight for CoreField {
 impl FieldIsEmpty for CoreField {
     fn is_empty(&self, x: usize, y: usize) -> bool {
         CoreField::is_empty(self, x, y)
+    }
+}
+
+impl From<&CoreField> for PuyoPlainField {
+    fn from(from: &CoreField) -> PuyoPlainField {
+        let mut field = PuyoPlainField::new();
+
+        for x in 0..(field::MAP_WIDTH) {
+            for y in 0..(field::MAP_HEIGHT) {
+                field.set_color(x, y, from.color(x, y))
+            }
+        }
+
+        field
+    }
+}
+
+impl std::fmt::Display for CoreField {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        PuyoPlainField::from(self).fmt(f)
     }
 }
 

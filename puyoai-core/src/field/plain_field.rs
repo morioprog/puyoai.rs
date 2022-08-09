@@ -488,6 +488,21 @@ impl<C: Color> fmt::Debug for PlainField<C> {
     }
 }
 
+impl<C: Color> fmt::Display for PlainField<C> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut s = String::new();
+
+        for y in (0..(field::MAP_HEIGHT)).rev() {
+            for x in 0..(field::MAP_WIDTH) {
+                s += &self.color(x, y).as_colored_str_wide().to_string();
+            }
+            s.push('\n');
+        }
+
+        write!(f, "{}", s)
+    }
+}
+
 pub type PuyoPlainField = PlainField<PuyoColor>;
 pub type RealPlainField = PlainField<RealColor>;
 

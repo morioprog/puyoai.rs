@@ -235,6 +235,13 @@ impl BitField {
             unsafe { self.m[i].set_all(bf.m[i]) };
         }
     }
+
+    pub fn calculate_height(&self) -> [i16; 8] {
+        let whole = unsafe { (self.m[0] | self.m[1] | self.m[2]).masked_field_13() };
+        let count = unsafe { sseext::mm_popcnt_epi16(whole.as_m128i()) };
+
+        i16x8::from(count).to_array()
+    }
 }
 
 #[cfg(all(target_feature = "avx2", target_feature = "bmi2"))]
@@ -760,6 +767,34 @@ mod tests {
         ));
 
         assert!(!bf.is_connected(6, 12));
+    }
+
+    #[test]
+    fn test_calculate_height() {
+        let bf = BitField::from_str(concat!(
+            ".....O", // 14
+            "....OO", // 13
+            "...OOO", // 12
+            "..OOOO", // 11
+            ".OOOOO", // 10
+            ".OOOOO", // 9
+            ".OOOOO", // 8
+            ".OOOOO", // 7
+            ".OOOOO", // 6
+            ".OOOOO", // 5
+            ".OOOOO", // 4
+            ".OOOOO", // 3
+            ".OOOOO", // 2
+            ".OOOOO"  // 1
+        ));
+
+        let height = bf.calculate_height();
+        assert_eq!(height[1], 0);
+        assert_eq!(height[2], 10);
+        assert_eq!(height[3], 11);
+        assert_eq!(height[4], 12);
+        assert_eq!(height[5], 13);
+        assert_eq!(height[6], 13); // not 14 but 13
     }
 }
 
