@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct RensaResult {
     pub chain: usize,
     pub score: usize,
