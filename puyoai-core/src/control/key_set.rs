@@ -38,7 +38,7 @@ pub fn parse_keysetseq(s: &str) -> Result<Vec<KeySet>, String> {
     for x in s.split(',') {
         let mut ks = KeySet::new();
         for c in x.chars() {
-            ks.set_key(try!(Key::parse_char(c)))
+            ks.set_key(Key::parse_char(c)?)
         }
         keysetseq.push(ks);
     }
