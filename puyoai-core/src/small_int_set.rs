@@ -1,14 +1,12 @@
 /// SmallIntSet is an integer set that can contain [0, 64).
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct SmallIntSet {
-    v: u64
+    v: u64,
 }
 
 impl SmallIntSet {
     pub fn new() -> SmallIntSet {
-        SmallIntSet {
-            v: 0,
-        }
+        SmallIntSet { v: 0 }
     }
 
     pub fn is_empty(&self) -> bool {
@@ -32,7 +30,6 @@ impl SmallIntSet {
         debug_assert!(x < 64);
         (self.v & (1 << x)) != 0
     }
-
 
     pub fn set(&mut self, x: usize) {
         debug_assert!(x < 64);

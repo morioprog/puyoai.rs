@@ -3,37 +3,45 @@ use std;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum RealColor {
-    EMPTY  = 0,
-    WALL   = 1,
-    OJAMA  = 2,
-    RED    = 3,
-    BLUE   = 4,
+    EMPTY = 0,
+    WALL = 1,
+    OJAMA = 2,
+    RED = 3,
+    BLUE = 4,
     YELLOW = 5,
-    GREEN  = 6,
+    GREEN = 6,
     PURPLE = 7,
 }
 
 const ALL_REAL_COLORS: &'static [RealColor] = &[
-    RealColor::EMPTY, RealColor::WALL, RealColor::OJAMA,
-    RealColor::RED, RealColor::BLUE, RealColor::YELLOW,
-    RealColor::GREEN, RealColor::PURPLE,
+    RealColor::EMPTY,
+    RealColor::WALL,
+    RealColor::OJAMA,
+    RealColor::RED,
+    RealColor::BLUE,
+    RealColor::YELLOW,
+    RealColor::GREEN,
+    RealColor::PURPLE,
 ];
 
 const ALL_NORMAL_REAL_COLORS: &'static [RealColor] = &[
-    RealColor::RED, RealColor::BLUE, RealColor::YELLOW,
-    RealColor::GREEN, RealColor::PURPLE,
+    RealColor::RED,
+    RealColor::BLUE,
+    RealColor::YELLOW,
+    RealColor::GREEN,
+    RealColor::PURPLE,
 ];
 
 impl RealColor {
     pub fn to_string(&self) -> &'static str {
         match *self {
-            RealColor::EMPTY  => "EMPTY",
-            RealColor::OJAMA  => "OJAMA",
-            RealColor::WALL   => "WALL",
-            RealColor::RED    => "RED",
-            RealColor::BLUE   => "BLUE",
+            RealColor::EMPTY => "EMPTY",
+            RealColor::OJAMA => "OJAMA",
+            RealColor::WALL => "WALL",
+            RealColor::RED => "RED",
+            RealColor::BLUE => "BLUE",
             RealColor::YELLOW => "YELLOW",
-            RealColor::GREEN  => "GREEN",
+            RealColor::GREEN => "GREEN",
             RealColor::PURPLE => "PURPLE",
         }
     }
@@ -51,7 +59,6 @@ impl Color for RealColor {
             b'G' | b'g' => RealColor::GREEN,
             b'P' | b'p' => RealColor::PURPLE,
             _ => RealColor::EMPTY,
-
         }
     }
 
@@ -81,65 +88,65 @@ impl Color for RealColor {
 
     fn is_normal_color(&self) -> bool {
         match *self {
-            RealColor::EMPTY  => false,
-            RealColor::OJAMA  => false,
-            RealColor::WALL   => false,
-            RealColor::RED    => true,
-            RealColor::BLUE   => true,
+            RealColor::EMPTY => false,
+            RealColor::OJAMA => false,
+            RealColor::WALL => false,
+            RealColor::RED => true,
+            RealColor::BLUE => true,
             RealColor::YELLOW => true,
-            RealColor::GREEN  => true,
+            RealColor::GREEN => true,
             RealColor::PURPLE => true,
         }
     }
 
     fn to_char(&self) -> char {
         match *self {
-            RealColor::EMPTY  => ' ',
-            RealColor::OJAMA  => 'O',
-            RealColor::WALL   => '#',
-            RealColor::RED    => 'R',
-            RealColor::BLUE   => 'B',
+            RealColor::EMPTY => ' ',
+            RealColor::OJAMA => 'O',
+            RealColor::WALL => '#',
+            RealColor::RED => 'R',
+            RealColor::BLUE => 'B',
             RealColor::YELLOW => 'Y',
-            RealColor::GREEN  => 'G',
+            RealColor::GREEN => 'G',
             RealColor::PURPLE => 'P',
         }
     }
 
     fn as_str(&self) -> &'static str {
         match *self {
-            RealColor::EMPTY  => " ",
-            RealColor::OJAMA  => "@",
-            RealColor::WALL   => "#",
-            RealColor::RED    => "R",
-            RealColor::BLUE   => "B",
+            RealColor::EMPTY => " ",
+            RealColor::OJAMA => "@",
+            RealColor::WALL => "#",
+            RealColor::RED => "R",
+            RealColor::BLUE => "B",
             RealColor::YELLOW => "Y",
-            RealColor::GREEN  => "G",
+            RealColor::GREEN => "G",
             RealColor::PURPLE => "P",
         }
     }
 
     fn as_str_wide(&self) -> &'static str {
         match *self {
-            RealColor::EMPTY  => "  ",
-            RealColor::OJAMA  => "@ ",
-            RealColor::WALL   => "# ",
-            RealColor::RED    => "R ",
-            RealColor::BLUE   => "B ",
+            RealColor::EMPTY => "  ",
+            RealColor::OJAMA => "@ ",
+            RealColor::WALL => "# ",
+            RealColor::RED => "R ",
+            RealColor::BLUE => "B ",
             RealColor::YELLOW => "Y ",
-            RealColor::GREEN  => "G ",
+            RealColor::GREEN => "G ",
             RealColor::PURPLE => "P ",
         }
     }
 
     fn as_colored_str_wide(&self) -> &'static str {
         match *self {
-            RealColor::EMPTY  => "  ",
-            RealColor::OJAMA  => "@@",
-            RealColor::WALL   => "##",
-            RealColor::RED    => "\x1b[41m  \x1b[49m",
-            RealColor::BLUE   => "\x1b[44m  \x1b[49m",
+            RealColor::EMPTY => "  ",
+            RealColor::OJAMA => "@@",
+            RealColor::WALL => "##",
+            RealColor::RED => "\x1b[41m  \x1b[49m",
+            RealColor::BLUE => "\x1b[44m  \x1b[49m",
             RealColor::YELLOW => "\x1b[43m  \x1b[49m",
-            RealColor::GREEN  => "\x1b[42m  \x1b[49m",
+            RealColor::GREEN => "\x1b[42m  \x1b[49m",
             RealColor::PURPLE => "\x1b[45m  \x1b[49m",
         }
     }
@@ -153,12 +160,11 @@ impl std::fmt::Display for RealColor {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::color::Color;
+    use super::*;
 
     #[test]
-    fn it_works() {
-    }
+    fn it_works() {}
 
     #[test]
     fn test_normal_color() {

@@ -3,38 +3,47 @@ use std;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PuyoColor {
-    EMPTY  = 0,
-    OJAMA  = 1,
-    WALL   = 2,
-    IRON   = 3,
-    RED    = 4,
-    BLUE   = 5,
+    EMPTY = 0,
+    OJAMA = 1,
+    WALL = 2,
+    IRON = 3,
+    RED = 4,
+    BLUE = 5,
     YELLOW = 6,
-    GREEN  = 7
+    GREEN = 7,
 }
 
 pub const NUM_PUYO_COLORS: usize = 8;
 
 const ALL_PUYO_COLORS: &'static [PuyoColor] = &[
-    PuyoColor::EMPTY, PuyoColor::OJAMA, PuyoColor::WALL, PuyoColor::IRON,
-    PuyoColor::RED, PuyoColor::BLUE, PuyoColor::YELLOW, PuyoColor::GREEN,
+    PuyoColor::EMPTY,
+    PuyoColor::OJAMA,
+    PuyoColor::WALL,
+    PuyoColor::IRON,
+    PuyoColor::RED,
+    PuyoColor::BLUE,
+    PuyoColor::YELLOW,
+    PuyoColor::GREEN,
 ];
 
 const ALL_NORMAL_PUYO_COLORS: &'static [PuyoColor] = &[
-    PuyoColor::RED, PuyoColor::BLUE, PuyoColor::YELLOW, PuyoColor::GREEN,
+    PuyoColor::RED,
+    PuyoColor::BLUE,
+    PuyoColor::YELLOW,
+    PuyoColor::GREEN,
 ];
 
 impl PuyoColor {
     pub fn to_string(&self) -> &'static str {
         match *self {
-            PuyoColor::EMPTY  => "EMPTY",
-            PuyoColor::OJAMA  => "OJAMA",
-            PuyoColor::WALL   => "WALL",
-            PuyoColor::IRON   => "IRON",
-            PuyoColor::RED    => "RED",
-            PuyoColor::BLUE   => "BLUE",
+            PuyoColor::EMPTY => "EMPTY",
+            PuyoColor::OJAMA => "OJAMA",
+            PuyoColor::WALL => "WALL",
+            PuyoColor::IRON => "IRON",
+            PuyoColor::RED => "RED",
+            PuyoColor::BLUE => "BLUE",
             PuyoColor::YELLOW => "YELLOW",
-            PuyoColor::GREEN  => "GREEN",
+            PuyoColor::GREEN => "GREEN",
         }
     }
 }
@@ -85,53 +94,53 @@ impl Color for PuyoColor {
 
     fn to_char(&self) -> char {
         match *self {
-            PuyoColor::EMPTY  => ' ',
-            PuyoColor::OJAMA  => 'O',
-            PuyoColor::WALL   => '#',
-            PuyoColor::IRON   => '&',
-            PuyoColor::RED    => 'R',
-            PuyoColor::BLUE   => 'B',
+            PuyoColor::EMPTY => ' ',
+            PuyoColor::OJAMA => 'O',
+            PuyoColor::WALL => '#',
+            PuyoColor::IRON => '&',
+            PuyoColor::RED => 'R',
+            PuyoColor::BLUE => 'B',
             PuyoColor::YELLOW => 'Y',
-            PuyoColor::GREEN  => 'G',
+            PuyoColor::GREEN => 'G',
         }
     }
 
     fn as_str(&self) -> &'static str {
         match *self {
-            PuyoColor::EMPTY  => " ",
-            PuyoColor::OJAMA  => "@",
-            PuyoColor::WALL   => "#",
-            PuyoColor::IRON   => "&",
-            PuyoColor::RED    => "R",
-            PuyoColor::BLUE   => "B",
+            PuyoColor::EMPTY => " ",
+            PuyoColor::OJAMA => "@",
+            PuyoColor::WALL => "#",
+            PuyoColor::IRON => "&",
+            PuyoColor::RED => "R",
+            PuyoColor::BLUE => "B",
             PuyoColor::YELLOW => "Y",
-            PuyoColor::GREEN  => "G",
+            PuyoColor::GREEN => "G",
         }
     }
 
     fn as_str_wide(&self) -> &'static str {
         match *self {
-            PuyoColor::EMPTY  => "  ",
-            PuyoColor::OJAMA  => "@ ",
-            PuyoColor::WALL   => "# ",
-            PuyoColor::IRON   => "& ",
-            PuyoColor::RED    => "R ",
-            PuyoColor::BLUE   => "B ",
+            PuyoColor::EMPTY => "  ",
+            PuyoColor::OJAMA => "@ ",
+            PuyoColor::WALL => "# ",
+            PuyoColor::IRON => "& ",
+            PuyoColor::RED => "R ",
+            PuyoColor::BLUE => "B ",
             PuyoColor::YELLOW => "Y ",
-            PuyoColor::GREEN  => "G ",
+            PuyoColor::GREEN => "G ",
         }
     }
 
     fn as_colored_str_wide(&self) -> &'static str {
         match *self {
-            PuyoColor::EMPTY  => "  ",
-            PuyoColor::OJAMA  => "@@",
-            PuyoColor::WALL   => "##",
-            PuyoColor::IRON   => "&&",
-            PuyoColor::RED    => "\x1b[41m  \x1b[49m",
-            PuyoColor::BLUE   => "\x1b[44m  \x1b[49m",
+            PuyoColor::EMPTY => "  ",
+            PuyoColor::OJAMA => "@@",
+            PuyoColor::WALL => "##",
+            PuyoColor::IRON => "&&",
+            PuyoColor::RED => "\x1b[41m  \x1b[49m",
+            PuyoColor::BLUE => "\x1b[44m  \x1b[49m",
             PuyoColor::YELLOW => "\x1b[43m  \x1b[49m",
-            PuyoColor::GREEN  => "\x1b[42m  \x1b[49m",
+            PuyoColor::GREEN => "\x1b[42m  \x1b[49m",
         }
     }
 }
@@ -144,12 +153,11 @@ impl std::fmt::Display for PuyoColor {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::color::Color;
+    use super::*;
 
     #[test]
-    fn it_works() {
-    }
+    fn it_works() {}
 
     #[test]
     fn test_normal_color() {

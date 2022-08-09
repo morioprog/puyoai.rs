@@ -20,19 +20,16 @@ pub const FRAMES_CONTINUOUS_TURN_PROHIBITED: usize = 3;
 pub const FRAMES_CONTINUOUS_ARROW_PROHIBITED: usize = 3;
 
 // dropping after chigiri or dropping ojama puyo.
-pub const FRAMES_TO_DROP: &'static[usize] = &[
-    0, 10, 16, 22, 24, 28, 32, 34, 36, 40, 42, 44, 46, 48, 50, 52
+pub const FRAMES_TO_DROP: &'static [usize] = &[
+    0, 10, 16, 22, 24, 28, 32, 34, 36, 40, 42, 44, 46, 48, 50, 52,
 ];
 
 // Pressing DOWN, or dropping after rensa.
-pub const FRAMES_TO_DROP_FAST: &'static[usize] = &[
-    0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30
-];
+pub const FRAMES_TO_DROP_FAST: &'static [usize] =
+    &[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30];
 
 //
-pub const FRAMES_TO_MOVE_HORIZONTALLY: &'static[usize] = &[
-    0, 4, 6, 8, 10, 12
-];
+pub const FRAMES_TO_MOVE_HORIZONTALLY: &'static [usize] = &[0, 4, 6, 8, 10, 12];
 
 pub fn grounding() -> usize {
     FRAMES_GROUNDING

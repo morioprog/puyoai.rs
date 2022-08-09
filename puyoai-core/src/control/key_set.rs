@@ -2,14 +2,12 @@ use control::Key;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct KeySet {
-    keys: usize,  // bit flags
+    keys: usize, // bit flags
 }
 
 impl KeySet {
     pub fn new() -> KeySet {
-        KeySet {
-            keys: 0,
-        }
+        KeySet { keys: 0 }
     }
 
     pub fn from_key(k: Key) -> KeySet {
@@ -86,7 +84,10 @@ mod tests {
             KeySet::from_key(Key::Start),
         ];
 
-        assert_eq!(expected, parse_keysetseq(">,<,v,^,A,B,S").unwrap().as_slice());
+        assert_eq!(
+            expected,
+            parse_keysetseq(">,<,v,^,A,B,S").unwrap().as_slice()
+        );
     }
 
     #[test]
@@ -100,6 +101,9 @@ mod tests {
             KeySet::from_keys(&[Key::Down, Key::LeftTurn]),
         ];
 
-        assert_eq!(expected, parse_keysetseq(">A,>A,<B,<B,vA,vB").unwrap().as_slice());
+        assert_eq!(
+            expected,
+            parse_keysetseq(">A,>A,<B,<B,vA,vB").unwrap().as_slice()
+        );
     }
 }

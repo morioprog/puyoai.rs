@@ -8,10 +8,7 @@ pub struct ColumnPuyo {
 
 impl ColumnPuyo {
     pub fn new(x: usize, color: PuyoColor) -> ColumnPuyo {
-        ColumnPuyo {
-            x: x,
-            color: color,
-        }
+        ColumnPuyo { x: x, color: color }
     }
 
     pub fn x(&self) -> usize {

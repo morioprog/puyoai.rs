@@ -52,15 +52,32 @@ pub fn mm_popcnt_epi16(x: m128i) -> m128i {
 
 #[cfg(test)]
 mod tests {
-    use x86intrin::*;
     use sseext;
+    use x86intrin::*;
 
     #[test]
     fn test_mm_popcnt_epi16() {
-        let m1 = mm_setr_epi16(0x0000, 0x0001, 0x0010, 0x0100, 0x1000, 0x1100, 0x0011, 0x0101);
-        let m2 = mm_setr_epi16(0x1110, 0x1101, 0x1011, 0x0111, 0xFF00u16 as i16, 0x00FF, 0x0F0F, 0xFFFFu16 as i16);
+        let m1 = mm_setr_epi16(
+            0x0000, 0x0001, 0x0010, 0x0100, 0x1000, 0x1100, 0x0011, 0x0101,
+        );
+        let m2 = mm_setr_epi16(
+            0x1110,
+            0x1101,
+            0x1011,
+            0x0111,
+            0xFF00u16 as i16,
+            0x00FF,
+            0x0F0F,
+            0xFFFFu16 as i16,
+        );
 
-        assert_eq!(sseext::mm_popcnt_epi16(m1).as_i16x8().as_array(), [0, 1, 1, 1, 1, 2, 2, 2]);
-        assert_eq!(sseext::mm_popcnt_epi16(m2).as_i16x8().as_array(), [3, 3, 3, 3, 8, 8, 8, 16]);
+        assert_eq!(
+            sseext::mm_popcnt_epi16(m1).as_i16x8().as_array(),
+            [0, 1, 1, 1, 1, 2, 2, 2]
+        );
+        assert_eq!(
+            sseext::mm_popcnt_epi16(m2).as_i16x8().as_array(),
+            [3, 3, 3, 3, 8, 8, 8, 16]
+        );
     }
 }

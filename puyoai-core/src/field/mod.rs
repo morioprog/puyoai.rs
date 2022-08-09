@@ -7,12 +7,12 @@ pub mod field;
 pub mod field_with_height;
 pub mod plain_field;
 
-pub use self::plain_field::PuyoPlainField;
-pub use self::plain_field::RealPlainField;
 pub use self::field::Field;
 pub use self::field::FieldHeight;
 pub use self::field::FieldIsEmpty;
 pub use self::field_with_height::FieldWithHeight;
+pub use self::plain_field::PuyoPlainField;
+pub use self::plain_field::RealPlainField;
 
 pub mod bit_field;
 pub mod core_field;

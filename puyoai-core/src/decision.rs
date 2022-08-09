@@ -45,10 +45,7 @@ const ALL_VALID_DECISIONS_FOR_REP: &'static [Decision] = &[
 
 impl Decision {
     pub fn new(x: usize, r: usize) -> Decision {
-        Decision {
-            x: x,
-            r: r,
-        }
+        Decision { x: x, r: r }
     }
 
     pub fn all_valid_decisions() -> &'static [Decision] {

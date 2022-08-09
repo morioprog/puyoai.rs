@@ -2,7 +2,7 @@ pub struct RensaResult {
     pub chain: usize,
     pub score: usize,
     pub frame: usize,
-    pub quick: bool
+    pub quick: bool,
 }
 
 impl RensaResult {
@@ -11,7 +11,7 @@ impl RensaResult {
             chain: chain,
             score: score,
             frame: frame,
-            quick: quick
+            quick: quick,
         }
     }
 

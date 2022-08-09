@@ -31,8 +31,7 @@ impl ColumnPuyoList {
     }
 
     pub fn size(&self) -> usize {
-        self.size[0] + self.size[1] + self.size[2] +
-        self.size[3] + self.size[4] + self.size[5]
+        self.size[0] + self.size[1] + self.size[2] + self.size[3] + self.size[4] + self.size[5]
     }
 
     pub fn top(&self, x: usize) -> Option<PuyoColor> {
@@ -104,7 +103,9 @@ impl ColumnPuyoList {
 
     pub fn merge(&mut self, cpl: &ColumnPuyoList) -> bool {
         for i in 0..6 {
-            if cpl.size[i] >= self.place_holders[i].size() && MAX_SIZE < self.size[i] + (cpl.size[i] - self.place_holders[i].size()) {
+            if cpl.size[i] >= self.place_holders[i].size()
+                && MAX_SIZE < self.size[i] + (cpl.size[i] - self.place_holders[i].size())
+            {
                 return false;
             }
         }

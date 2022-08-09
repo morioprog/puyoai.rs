@@ -6,15 +6,11 @@ pub struct KumipuyoPos {
 
 impl KumipuyoPos {
     pub fn new(x: i32, y: i32, r: i32) -> KumipuyoPos {
-        KumipuyoPos {
-            x: x,
-            y: y,
-            r: r,
-        }
+        KumipuyoPos { x: x, y: y, r: r }
     }
 
     pub fn initial_pos() -> KumipuyoPos {
-        return KumipuyoPos::new(3, 12, 0)
+        return KumipuyoPos::new(3, 12, 0);
     }
 
     pub fn axis_x(&self) -> i32 {

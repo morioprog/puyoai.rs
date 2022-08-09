@@ -1,7 +1,7 @@
 use field;
 
 pub struct FieldChecker {
-    flag: [[bool; field::MAP_HEIGHT]; field::MAP_WIDTH]
+    flag: [[bool; field::MAP_HEIGHT]; field::MAP_WIDTH],
 }
 
 impl FieldChecker {
@@ -58,6 +58,5 @@ mod tests {
                 assert!(!checker.get(x, y));
             }
         }
-
     }
 }
