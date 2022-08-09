@@ -1,20 +1,16 @@
+use color::PuyoColor;
+use decision::Decision;
 use field::CoreField;
 use kumipuyo::Kumipuyo;
-use decision::Decision;
-use color::PuyoColor;
 
 const URL_PREFIX: &'static str = "http://www.puyop.com/s/";
 
 // 64 characters
-const ENCODER: &'static[char] = &[
-    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
-    'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
-    'u', 'v', 'w', 'x', 'y', 'z',
-    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
-    'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
-    'U', 'V', 'W', 'X', 'Y', 'Z',
-    '[', ']',
+const ENCODER: &'static [char] = &[
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
+    'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B',
+    'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U',
+    'V', 'W', 'X', 'Y', 'Z', '[', ']',
 ];
 
 fn tsumo_color_id(c: PuyoColor) -> usize {
@@ -89,7 +85,12 @@ pub fn make_puyop_url(field: &CoreField, seq: &[Kumipuyo], decisions: &[Decision
     if seq.is_empty() && decisions.is_empty() {
         format!("{}{}", URL_PREFIX, encode_field(field))
     } else {
-        format!("{}{}_{}", URL_PREFIX, encode_field(field), encode_control(seq, decisions))
+        format!(
+            "{}{}_{}",
+            URL_PREFIX,
+            encode_field(field),
+            encode_control(seq, decisions)
+        )
     }
 }
 
@@ -101,13 +102,15 @@ mod test {
     #[test]
     fn test_make_puyop_url() {
         let cf = CoreField::from_str(concat!(
-            ".....Y",
-            ".G..YY",
-            "RGRRBB",
-            "RRGRGB",
+            ".....Y", // 4
+            ".G..YY", // 3
+            "RGRRBB", // 2
+            "RRGRGB", // 1
         ));
 
-        assert_eq!("http://www.puyop.com/s/420Aa9r9hj",
-                   make_puyop_url(&cf, &[], &[]));
+        assert_eq!(
+            "http://www.puyop.com/s/420Aa9r9hj",
+            make_puyop_url(&cf, &[], &[])
+        );
     }
 }

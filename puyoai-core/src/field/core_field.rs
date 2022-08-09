@@ -26,11 +26,11 @@ impl CoreField {
             height: [0; 8],
         };
 
-        for x in 1 .. field::WIDTH + 1 {
-            for y in 1 .. 15 {
+        for x in 1..field::WIDTH + 1 {
+            for y in 1..15 {
                 if cf.is_empty(x, y) {
                     cf.height[x] = (y - 1) as i16;
-                    break
+                    break;
                 }
             }
         }
@@ -68,7 +68,11 @@ impl CoreField {
     }
 
     pub fn is_chigiri_decision(&self, decision: &Decision) -> bool {
-        debug_assert!(decision.is_valid(), "decision {:?} should be valid", decision);
+        debug_assert!(
+            decision.is_valid(),
+            "decision {:?} should be valid",
+            decision
+        );
         let axis_x = decision.axis_x();
         let child_x = decision.child_x();
         if axis_x == child_x {
@@ -90,7 +94,12 @@ impl CoreField {
         self.field.count_connected_max4_with_color(x, y, c)
     }
 
-    pub fn drop_puyo_on_with_max_height(&mut self, x: usize, c: PuyoColor, max_height: usize) -> bool {
+    pub fn drop_puyo_on_with_max_height(
+        &mut self,
+        x: usize,
+        c: PuyoColor,
+        max_height: usize,
+    ) -> bool {
         debug_assert!(c != PuyoColor::EMPTY);
         debug_assert!(max_height <= 14);
 
@@ -98,8 +107,12 @@ impl CoreField {
             return false;
         }
 
-        debug_assert!(self.color(x, self.height(x) + 1) == PuyoColor::EMPTY,
-                      "x={} max_height={}", x, max_height);
+        debug_assert!(
+            self.color(x, self.height(x) + 1) == PuyoColor::EMPTY,
+            "x={} max_height={}",
+            x,
+            max_height
+        );
 
         self.height[x] += 1;
         self.field.set_color(x, self.height[x] as usize, c);
@@ -111,7 +124,11 @@ impl CoreField {
         self.drop_column_puyo_list_with_max_height(cpl, 13)
     }
 
-    pub fn drop_column_puyo_list_with_max_height(&mut self, cpl: &ColumnPuyoList, max_height: usize) -> bool {
+    pub fn drop_column_puyo_list_with_max_height(
+        &mut self,
+        cpl: &ColumnPuyoList,
+        max_height: usize,
+    ) -> bool {
         // check size
         for x in 1..7 {
             if self.height(x) + cpl.size_on(x) > max_height {
@@ -150,7 +167,8 @@ impl CoreField {
                 // TODO(mayah): We need to add penalty here. How much penalty is necessary?
                 drop_frames += KABEGOE_PENALTY + frame::FRAMES_GROUNDING;
             } else {
-                drop_frames += frame::FRAMES_TO_DROP_FAST[drop_height as usize] + frame::FRAMES_GROUNDING;
+                drop_frames +=
+                    frame::FRAMES_TO_DROP_FAST[drop_height as usize] + frame::FRAMES_GROUNDING;
             }
         } else if decision.rot() == 2 {
             let mut drop_height = (field::HEIGHT as isize) - (self.height(x1) as isize) - 1;
@@ -160,7 +178,8 @@ impl CoreField {
                 drop_height = 6;
             }
 
-            drop_frames += frame::FRAMES_TO_DROP_FAST[drop_height as usize] + frame::FRAMES_GROUNDING;
+            drop_frames +=
+                frame::FRAMES_TO_DROP_FAST[drop_height as usize] + frame::FRAMES_GROUNDING;
         } else {
             if self.height(x1) == self.height(x2) {
                 let drop_height = field::HEIGHT as isize - self.height(x1) as isize;
@@ -169,7 +188,8 @@ impl CoreField {
                 } else if drop_height < 3 {
                     drop_frames += frame::FRAMES_TO_DROP_FAST[3] + frame::FRAMES_GROUNDING;
                 } else {
-                    drop_frames += frame::FRAMES_TO_DROP_FAST[drop_height as usize] + frame::FRAMES_GROUNDING;
+                    drop_frames +=
+                        frame::FRAMES_TO_DROP_FAST[drop_height as usize] + frame::FRAMES_GROUNDING;
                 }
             } else {
                 let min_height = std::cmp::min(self.height(x1), self.height(x2));
@@ -218,15 +238,15 @@ mod tests {
     fn test_constructor() {
         let cf = CoreField::new();
 
-        for x in 1 .. field::WIDTH + 1 {
-            for y in 1 .. field::HEIGHT + 1 {
+        for x in 1..field::WIDTH + 1 {
+            for y in 1..field::HEIGHT + 1 {
                 assert!(cf.is_empty(x, y));
                 assert!(cf.is_color(x, y, PuyoColor::EMPTY));
                 assert_eq!(PuyoColor::EMPTY, cf.color(x, y));
             }
         }
 
-        for x in 1 .. field::WIDTH + 1 {
+        for x in 1..field::WIDTH + 1 {
             assert_eq!(0, cf.height(x));
         }
     }
@@ -234,8 +254,9 @@ mod tests {
     #[test]
     fn test_from_str() {
         let cf = CoreField::from_str(concat!(
-            "R.....",
-            "RRRB.."));
+            "R.....", // 2
+            "RRRB.."  // 1
+        ));
 
         assert_eq!(PuyoColor::WALL, cf.color(0, 1));
         assert_eq!(PuyoColor::RED, cf.color(1, 1));
@@ -259,17 +280,18 @@ mod tests {
         let mut cf = CoreField::from_str(concat!(
             ".....R", // 13
             "OOOOOR", // 12
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 11
+            "OOOOOO", // 10
+            "OOOOOO", // 9
             "OOOOOO", // 8
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 7
+            "OOOOOO", // 6
+            "OOOOOO", // 5
             "OOOOOO", // 4
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO"));
+            "OOOOOO", // 3
+            "OOOOOO", // 2
+            "OOOOOO"  // 1
+        ));
 
         assert!(cf.drop_puyo_on_with_max_height(3, PuyoColor::BLUE, 13));
         assert!(cf.drop_puyo_on_with_max_height(4, PuyoColor::BLUE, 13));
@@ -279,17 +301,18 @@ mod tests {
         let expected = CoreField::from_str(concat!(
             "..BB.R", // 13
             "OOOOOR", // 12
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 11
+            "OOOOOO", // 10
+            "OOOOOO", // 9
             "OOOOOO", // 8
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 7
+            "OOOOOO", // 6
+            "OOOOOO", // 5
             "OOOOOO", // 4
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO"));
+            "OOOOOO", // 3
+            "OOOOOO", // 2
+            "OOOOOO"  // 1
+        ));
 
         assert_eq!(cf, expected);
     }
@@ -299,17 +322,18 @@ mod tests {
         let mut cf = CoreField::from_str(concat!(
             ".....R", // 13
             "OOOOOR", // 12
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 11
+            "OOOOOO", // 10
+            "OOOOOO", // 9
             "OOOOOO", // 8
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 7
+            "OOOOOO", // 6
+            "OOOOOO", // 5
             "OOOOOO", // 4
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO"));
+            "OOOOOO", // 3
+            "OOOOOO", // 2
+            "OOOOOO"  // 1
+        ));
 
         let mut cpl = ColumnPuyoList::new();
         assert!(cpl.add(3, PuyoColor::BLUE));
@@ -319,17 +343,18 @@ mod tests {
         let expected = CoreField::from_str(concat!(
             "..BB.R", // 13
             "OOOOOR", // 12
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 11
+            "OOOOOO", // 10
+            "OOOOOO", // 9
             "OOOOOO", // 8
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 7
+            "OOOOOO", // 6
+            "OOOOOO", // 5
             "OOOOOO", // 4
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO"));
+            "OOOOOO", // 3
+            "OOOOOO", // 2
+            "OOOOOO"  // 1
+        ));
 
         assert_eq!(cf, expected);
     }
@@ -359,29 +384,43 @@ mod tests {
         // TODO(mayah): We have to confirm this.
         let cf = CoreField::new();
 
-        assert_eq!(frame::FRAMES_TO_DROP_FAST[field::HEIGHT] + frame::FRAMES_GROUNDING,
-                   cf.frames_to_drop_next(&Decision::new(3, 0)));
-        assert_eq!(frame::FRAMES_TO_DROP_FAST[field::HEIGHT] + frame::FRAMES_GROUNDING,
-                   cf.frames_to_drop_next(&Decision::new(3, 1)));
-        assert_eq!(frame::FRAMES_TO_DROP_FAST[field::HEIGHT - 1] + frame::FRAMES_GROUNDING,
-                   cf.frames_to_drop_next(&Decision::new(3, 2)));
-        assert_eq!(frame::FRAMES_TO_DROP_FAST[field::HEIGHT] + frame::FRAMES_GROUNDING,
-                   cf.frames_to_drop_next(&Decision::new(3, 3)));
-        assert_eq!(frame::FRAMES_TO_MOVE_HORIZONTALLY[2] + frame::FRAMES_TO_DROP_FAST[field::HEIGHT] + frame::FRAMES_GROUNDING,
-                   cf.frames_to_drop_next(&Decision::new(1, 0)));
+        assert_eq!(
+            frame::FRAMES_TO_DROP_FAST[field::HEIGHT] + frame::FRAMES_GROUNDING,
+            cf.frames_to_drop_next(&Decision::new(3, 0))
+        );
+        assert_eq!(
+            frame::FRAMES_TO_DROP_FAST[field::HEIGHT] + frame::FRAMES_GROUNDING,
+            cf.frames_to_drop_next(&Decision::new(3, 1))
+        );
+        assert_eq!(
+            frame::FRAMES_TO_DROP_FAST[field::HEIGHT - 1] + frame::FRAMES_GROUNDING,
+            cf.frames_to_drop_next(&Decision::new(3, 2))
+        );
+        assert_eq!(
+            frame::FRAMES_TO_DROP_FAST[field::HEIGHT] + frame::FRAMES_GROUNDING,
+            cf.frames_to_drop_next(&Decision::new(3, 3))
+        );
+        assert_eq!(
+            frame::FRAMES_TO_MOVE_HORIZONTALLY[2]
+                + frame::FRAMES_TO_DROP_FAST[field::HEIGHT]
+                + frame::FRAMES_GROUNDING,
+            cf.frames_to_drop_next(&Decision::new(1, 0))
+        );
     }
 
     #[test]
     fn test_frames_to_drop_next_with_chigiri() {
         let cf = CoreField::from_str(concat!(
-            "..O...",
-            "..O...",
-            "..O...",
-            "..O...",
+            "..O...", // 4
+            "..O...", // 3
+            "..O...", // 2
+            "..O...", // 1
         ));
 
-        let expected = frame::FRAMES_TO_DROP_FAST[field::HEIGHT - 4] + frame::FRAMES_GROUNDING +
-            frame::FRAMES_TO_DROP[4] + frame::FRAMES_GROUNDING;
+        let expected = frame::FRAMES_TO_DROP_FAST[field::HEIGHT - 4]
+            + frame::FRAMES_GROUNDING
+            + frame::FRAMES_TO_DROP[4]
+            + frame::FRAMES_GROUNDING;
         assert_eq!(expected, cf.frames_to_drop_next(&Decision::new(3, 1)));
     }
 
@@ -389,17 +428,17 @@ mod tests {
     fn test_frames_to_drop_next_on_13th_row() {
         let cf = CoreField::from_str(concat!(
             "OO.OOO", // 12
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 11
+            "OOOOOO", // 10
+            "OOOOOO", // 9
             "OOOOOO", // 8
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 7
+            "OOOOOO", // 6
+            "OOOOOO", // 5
             "OOOOOO", // 4
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 3
+            "OOOOOO", // 2
+            "OOOOOO", // 1
         ));
 
         assert_eq!(11, cf.height(3));
@@ -407,11 +446,20 @@ mod tests {
 
         // We cannot put with Decision(4, 2).
 
-        assert_eq!(6 + frame::FRAMES_TO_MOVE_HORIZONTALLY[1] + frame::FRAMES_GROUNDING,
-                   cf.frames_to_drop_next(&Decision::new(4, 0)));
-        assert_eq!(6 + frame::FRAMES_TO_MOVE_HORIZONTALLY[1] + frame::FRAMES_GROUNDING,
-                   cf.frames_to_drop_next(&Decision::new(4, 1)));
-        assert_eq!(6 + frame::FRAMES_TO_MOVE_HORIZONTALLY[1] + frame::FRAMES_GROUNDING + frame::FRAMES_TO_DROP[1] + frame::FRAMES_GROUNDING,
-                   cf.frames_to_drop_next(&Decision::new(4, 3)));
+        assert_eq!(
+            6 + frame::FRAMES_TO_MOVE_HORIZONTALLY[1] + frame::FRAMES_GROUNDING,
+            cf.frames_to_drop_next(&Decision::new(4, 0))
+        );
+        assert_eq!(
+            6 + frame::FRAMES_TO_MOVE_HORIZONTALLY[1] + frame::FRAMES_GROUNDING,
+            cf.frames_to_drop_next(&Decision::new(4, 1))
+        );
+        assert_eq!(
+            6 + frame::FRAMES_TO_MOVE_HORIZONTALLY[1]
+                + frame::FRAMES_GROUNDING
+                + frame::FRAMES_TO_DROP[1]
+                + frame::FRAMES_GROUNDING,
+            cf.frames_to_drop_next(&Decision::new(4, 3))
+        );
     }
 }

@@ -9,9 +9,7 @@ pub struct FieldBit {
 
 impl FieldBit {
     pub fn new(m: m128i) -> FieldBit {
-        FieldBit {
-            m: m,
-        }
+        FieldBit { m: m }
     }
 
     pub unsafe fn uninitialized() -> FieldBit {
@@ -20,20 +18,31 @@ impl FieldBit {
 
     pub fn empty() -> FieldBit {
         FieldBit {
-            m: mm_setzero_si128()
+            m: mm_setzero_si128(),
         }
     }
 
-    pub fn from_values(v1: u16, v2: u16, v3: u16, v4: u16, v5: u16, v6: u16, v7: u16, v8: u16) -> FieldBit {
+    pub fn from_values(
+        v1: u16,
+        v2: u16,
+        v3: u16,
+        v4: u16,
+        v5: u16,
+        v6: u16,
+        v7: u16,
+        v8: u16,
+    ) -> FieldBit {
         FieldBit {
-            m: mm_setr_epi16(v1 as i16, v2 as i16, v3 as i16, v4 as i16,
-                             v5 as i16, v6 as i16, v7 as i16, v8 as i16)
+            m: mm_setr_epi16(
+                v1 as i16, v2 as i16, v3 as i16, v4 as i16, v5 as i16, v6 as i16, v7 as i16,
+                v8 as i16,
+            ),
         }
     }
 
     pub fn from_onebit(x: usize, y: usize) -> FieldBit {
         FieldBit {
-            m: FieldBit::onebit(x, y)
+            m: FieldBit::onebit(x, y),
         }
     }
 
@@ -96,18 +105,25 @@ impl FieldBit {
 
     pub fn masked_field_12(&self) -> FieldBit {
         FieldBit {
-            m: mm_and_si128(self.m, mm_setr_epi16(0, 0x1FFE, 0x1FFE, 0x1FFE, 0x1FFE, 0x1FFE, 0x1FFE, 0)),
+            m: mm_and_si128(
+                self.m,
+                mm_setr_epi16(0, 0x1FFE, 0x1FFE, 0x1FFE, 0x1FFE, 0x1FFE, 0x1FFE, 0),
+            ),
         }
     }
 
     pub fn masked_field_13(&self) -> FieldBit {
         FieldBit {
-            m: mm_and_si128(self.m, mm_setr_epi16(0, 0x3FFE, 0x3FFE, 0x3FFE, 0x3FFE, 0x3FFE, 0x3FFE, 0)),
+            m: mm_and_si128(
+                self.m,
+                mm_setr_epi16(0, 0x3FFE, 0x3FFE, 0x3FFE, 0x3FFE, 0x3FFE, 0x3FFE, 0),
+            ),
         }
     }
 
     pub fn not_masked_field_13(&self) -> FieldBit {
-        let r = sseext::mm_setone_si128() ^ mm_setr_epi16(0, 0x3FFE, 0x3FFE, 0x3FFE, 0x3FFE, 0x3FFE, 0x3FFE, 0);
+        let r = sseext::mm_setone_si128()
+            ^ mm_setr_epi16(0, 0x3FFE, 0x3FFE, 0x3FFE, 0x3FFE, 0x3FFE, 0x3FFE, 0);
         FieldBit {
             m: mm_and_si128(self.m, r),
         }
@@ -195,7 +211,8 @@ impl FieldBit {
             expanded = mm_or_si128(mm_srli_si128(seed, 2), expanded);
             expanded = mm_and_si128(mask.m, expanded);
 
-            if mm_testc_si128(seed, expanded) != 0 { // seed == expanded
+            if mm_testc_si128(seed, expanded) != 0 {
+                // seed == expanded
                 return FieldBit::new(expanded);
             }
             seed = expanded;
@@ -243,7 +260,7 @@ impl FieldBit {
         let m3 = mm_slli_si128(seed, 2);
         let m4 = mm_srli_si128(seed, 2);
 
-        return FieldBit::new((m1 | m2) | (m3 | m4))
+        return FieldBit::new((m1 | m2) | (m3 | m4));
     }
 
     pub fn iterate_bit_with_masking<F: FnMut(FieldBit) -> FieldBit>(&self, mut callback: F) {
@@ -271,7 +288,10 @@ impl FieldBit {
         }
     }
 
-    pub fn iterate_bit_position<F>(&self, mut callback: F) where F: FnMut(usize, usize) {
+    pub fn iterate_bit_position<F>(&self, mut callback: F)
+    where
+        F: FnMut(usize, usize),
+    {
         let mut low = self.m.as_u64x2().extract(0);
         let mut high = self.m.as_u64x2().extract(1);
 
@@ -333,9 +353,18 @@ impl std::cmp::PartialEq<FieldBit> for FieldBit {
 impl std::fmt::Display for FieldBit {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let x = self.m.as_u16x8();
-        write!(f, "({}, {}, {}, {}, {}, {}, {}, {})",
-               x.extract(0), x.extract(1), x.extract(2), x.extract(3),
-               x.extract(4), x.extract(5), x.extract(6), x.extract(7))
+        write!(
+            f,
+            "({}, {}, {}, {}, {}, {}, {}, {})",
+            x.extract(0),
+            x.extract(1),
+            x.extract(2),
+            x.extract(3),
+            x.extract(4),
+            x.extract(5),
+            x.extract(6),
+            x.extract(7)
+        )
     }
 }
 
@@ -347,8 +376,8 @@ mod tests {
     #[test]
     fn test_empty() {
         let fb = FieldBit::empty();
-        for x in 0 .. 8 {
-            for y in 0 .. 16 {
+        for x in 0..8 {
+            for y in 0..16 {
                 assert_eq!(fb.get(x, y), false);
             }
         }
@@ -356,10 +385,26 @@ mod tests {
 
     #[test]
     fn test_from_value() {
-        let fb = FieldBit::from_values(1 << 0, 1 << 1, 1 << 2, 1 << 3, 1 << 4, 1 << 5, 1 << 6, 1 << 7);
-        for x in 0 .. 8 {
-            for y in 0 .. 16 {
-                assert_eq!(fb.get(x, y), x == y, "failed at x={}, y={}, fb.get(x, y)={}", x, y, fb.get(x, y));
+        let fb = FieldBit::from_values(
+            1 << 0,
+            1 << 1,
+            1 << 2,
+            1 << 3,
+            1 << 4,
+            1 << 5,
+            1 << 6,
+            1 << 7,
+        );
+        for x in 0..8 {
+            for y in 0..16 {
+                assert_eq!(
+                    fb.get(x, y),
+                    x == y,
+                    "failed at x={}, y={}, fb.get(x, y)={}",
+                    x,
+                    y,
+                    fb.get(x, y)
+                );
             }
         }
     }
@@ -367,12 +412,13 @@ mod tests {
     #[test]
     fn test_from_str() {
         let fb = FieldBit::from_str(concat!(
-            "111...",
-            "......",
-            "111..."));
+            "111...", // 3
+            "......", // 2
+            "111..."  // 1
+        ));
 
-        for x in 0 .. 8 {
-            for y in 0 .. 16 {
+        for x in 0..8 {
+            for y in 0..16 {
                 let b = (y == 1 || y == 3) && (1 <= x && x <= 3);
                 assert_eq!(fb.get(x, y), b, "x={}, y={}", x, y);
             }
@@ -381,8 +427,8 @@ mod tests {
 
     #[test]
     fn test_set_get() {
-        for x in 0 .. 8 {
-            for y in 0 .. 16 {
+        for x in 0..8 {
+            for y in 0..16 {
                 let mut fb = FieldBit::empty();
                 assert!(!fb.get(x, y));
                 fb.set(x, y);
@@ -395,15 +441,29 @@ mod tests {
 
     #[test]
     fn test_masked_field() {
-        let fb = FieldBit::from_values(0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF);
+        let fb = FieldBit::from_values(
+            0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
+        );
         let fb12 = fb.masked_field_12();
         let fb13 = fb.masked_field_13();
 
-        for x in 0 .. field::MAP_WIDTH {
-            for y in 0 .. field::MAP_HEIGHT {
+        for x in 0..field::MAP_WIDTH {
+            for y in 0..field::MAP_HEIGHT {
                 assert!(fb.get(x, y), "x={}, y={}", x, y);
-                assert_eq!(fb12.get(x, y), 1 <= x && x <= 6 && 1 <= y && y <= 12, "x={}, y={}", x, y);
-                assert_eq!(fb13.get(x, y), 1 <= x && x <= 6 && 1 <= y && y <= 13, "x={}, y={}", x, y);
+                assert_eq!(
+                    fb12.get(x, y),
+                    1 <= x && x <= 6 && 1 <= y && y <= 12,
+                    "x={}, y={}",
+                    x,
+                    y
+                );
+                assert_eq!(
+                    fb13.get(x, y),
+                    1 <= x && x <= 6 && 1 <= y && y <= 13,
+                    "x={}, y={}",
+                    x,
+                    y
+                );
             }
         }
     }
@@ -417,20 +477,21 @@ mod tests {
     #[test]
     fn test_expand() {
         let mask = FieldBit::from_str(concat!(
-            ".1....",
-            "1.11..",
-            "1.1...",
-            "1.1...",
+            ".1....", // 4
+            "1.11..", // 3
+            "1.1...", // 2
+            "1.1...", // 1
         ));
 
         let expected = FieldBit::from_str(concat!(
-            "..11..",
-            "..1...",
-            "..1..."));
+            "..11..", // 3
+            "..1...", // 2
+            "..1..."  // 1
+        ));
 
         let actual = FieldBit::from_onebit(3, 1).expand(&mask);
-        for x in 0 .. 8 {
-            for y in 0 .. 16 {
+        for x in 0..8 {
+            for y in 0..16 {
                 assert_eq!(actual.get(x, y), expected.get(x, y), "x={}, y={}", x, y);
             }
         }
@@ -439,23 +500,26 @@ mod tests {
     #[test]
     fn test_expand1() {
         let mask = FieldBit::from_str(concat!(
-            "111111",
-            "111111",
-            "111111"));
+            "111111", // 3
+            "111111", // 2
+            "111111"  // 1
+        ));
 
         let seed = FieldBit::from_str(concat!(
-            "......",
-            "1...1.",
-            "......"));
+            "......", // 3
+            "1...1.", // 2
+            "......"  // 1
+        ));
 
         let expected = FieldBit::from_str(concat!(
-            "1...1.",
-            "11.111",
-            "1...1."));
+            "1...1.", // 3
+            "11.111", // 2
+            "1...1."  // 1
+        ));
 
         let actual = seed.expand1(mask);
-        for x in 0 .. 8 {
-            for y in 0 .. 16 {
+        for x in 0..8 {
+            for y in 0..16 {
                 assert_eq!(actual.get(x, y), expected.get(x, y), "x={}, y={}", x, y);
             }
         }
@@ -487,19 +551,20 @@ mod tests {
     #[test]
     fn test_find_vanishing_bits_1() {
         let f = FieldBit::from_str(concat!(
-            ".1....",
-            "11..1.",
-            ".1.111",
-            "1...1.",
-            "11.111",
-            "1...1."));
+            ".1....", // 6
+            "11..1.", // 5
+            ".1.111", // 4
+            "1...1.", // 3
+            "11.111", // 2
+            "1...1."  // 1
+        ));
 
         let mut vanishing = unsafe { FieldBit::uninitialized() };
         assert!(f.has_vanishing_bits());
         assert!(f.find_vanishing_bits(&mut vanishing));
 
-        for x in 1 .. field::WIDTH + 1 {
-            for y in 1 .. field::HEIGHT + 1 {
+        for x in 1..field::WIDTH + 1 {
+            for y in 1..field::HEIGHT + 1 {
                 assert_eq!(vanishing.get(x, y), f.get(x, y), "x={}, y={}", x, y);
             }
         }
@@ -508,17 +573,18 @@ mod tests {
     #[test]
     fn test_find_vanishing_bits_2() {
         let f = FieldBit::from_str(concat!(
-            ".....1",
-            ".111.1",
-            ".....1",
-            ".1.11."));
+            ".....1", // 4
+            ".111.1", // 3
+            ".....1", // 2
+            ".1.11."  // 1
+        ));
 
         let mut vanishing = unsafe { FieldBit::uninitialized() };
         assert!(!f.has_vanishing_bits());
         assert!(!f.find_vanishing_bits(&mut vanishing));
 
-        for x in 1 .. field::WIDTH + 1 {
-            for y in 1 .. field::HEIGHT + 1 {
+        for x in 1..field::WIDTH + 1 {
+            for y in 1..field::HEIGHT + 1 {
                 assert!(!vanishing.get(x, y));
             }
         }
@@ -527,13 +593,15 @@ mod tests {
     #[test]
     fn test_eq() {
         let fb1 = FieldBit::from_str(concat!(
-            "1....1",
-            "1....1",
-            "111111"));
+            "1....1", // 3
+            "1....1", // 2
+            "111111"  // 1
+        ));
         let fb2 = FieldBit::from_str(concat!(
-            "111111",
-            "1....1",
-            "1....1"));
+            "111111", // 3
+            "1....1", // 2
+            "1....1"  // 1
+        ));
 
         assert!(fb1 == fb1);
         assert!(fb2 == fb2);
@@ -543,22 +611,26 @@ mod tests {
     #[test]
     fn test_bit() {
         let fb1 = FieldBit::from_str(concat!(
-            "1....1",
-            "1....1",
-            "111111"));
+            "1....1", // 3
+            "1....1", // 2
+            "111111"  // 1
+        ));
         let fb2 = FieldBit::from_str(concat!(
-            "111111",
-            "1....1",
-            "1....1"));
+            "111111", // 3
+            "1....1", // 2
+            "1....1"  // 1
+        ));
 
         let expected_and = FieldBit::from_str(concat!(
-            "1....1",
-            "1....1",
-            "1....1"));
+            "1....1", // 3
+            "1....1", // 2
+            "1....1"  // 1
+        ));
         let expected_or = FieldBit::from_str(concat!(
-            "111111",
-            "1....1",
-            "111111"));
+            "111111", // 3
+            "1....1", // 2
+            "111111"  // 1
+        ));
 
         assert_eq!(expected_and, fb1 & fb2);
         assert_eq!(expected_or, fb1 | fb2);

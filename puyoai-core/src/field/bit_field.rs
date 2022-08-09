@@ -5,17 +5,17 @@ use std::{self, mem};
 use x86intrin::*;
 
 #[cfg(all(target_feature = "avx2", target_feature = "bmi2"))]
+use field_bit_256::FieldBit256;
+#[cfg(all(target_feature = "avx2", target_feature = "bmi2"))]
 use frame;
 #[cfg(all(target_feature = "avx2", target_feature = "bmi2"))]
 use rensa_result::RensaResult;
 #[cfg(all(target_feature = "avx2", target_feature = "bmi2"))]
-use rensa_tracker::{RensaTracker, RensaNonTracker};
+use rensa_tracker::{RensaNonTracker, RensaTracker};
 #[cfg(all(target_feature = "avx2", target_feature = "bmi2"))]
 use score;
 #[cfg(all(target_feature = "avx2", target_feature = "bmi2"))]
 use sseext;
-#[cfg(all(target_feature = "avx2", target_feature = "bmi2"))]
-use field_bit_256::FieldBit256;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct BitField {
@@ -25,15 +25,23 @@ pub struct BitField {
 impl BitField {
     pub fn new() -> BitField {
         BitField {
-            m: [FieldBit::empty(),
-                FieldBit::from_values(0xFFFF, 0x8001, 0x8001, 0x8001, 0x8001, 0x8001, 0x8001, 0xFFFF),
-                FieldBit::empty(), ]
+            m: [
+                FieldBit::empty(),
+                FieldBit::from_values(
+                    0xFFFF, 0x8001, 0x8001, 0x8001, 0x8001, 0x8001, 0x8001, 0xFFFF,
+                ),
+                FieldBit::empty(),
+            ],
         }
     }
 
     pub unsafe fn uninitialized() -> BitField {
         BitField {
-            m: [FieldBit::uninitialized(), FieldBit::uninitialized(), FieldBit::uninitialized()]
+            m: [
+                FieldBit::uninitialized(),
+                FieldBit::uninitialized(),
+                FieldBit::uninitialized(),
+            ],
         }
     }
 
@@ -41,8 +49,8 @@ impl BitField {
         let mut bf = BitField::new();
 
         // TODO(mayah): We have better algorithm here.
-        for x in 0 .. field::MAP_WIDTH {
-            for y in 0 .. field::MAP_HEIGHT {
+        for x in 0..field::MAP_WIDTH {
+            for y in 0..field::MAP_HEIGHT {
                 bf.set_color(x, y, pf.color(x, y))
             }
         }
@@ -59,9 +67,7 @@ impl BitField {
         let b1: u8 = if self.m[1].get(x, y) { 2 } else { 0 };
         let b2: u8 = if self.m[2].get(x, y) { 4 } else { 0 };
 
-        unsafe {
-            mem::transmute(b0 | b1 | b2)
-        }
+        unsafe { mem::transmute(b0 | b1 | b2) }
     }
 
     pub fn is_color(&self, x: usize, y: usize, c: PuyoColor) -> bool {
@@ -70,7 +76,7 @@ impl BitField {
 
     pub fn is_empty(&self, x: usize, y: usize) -> bool {
         let whole = self.m[0] | self.m[1] | self.m[2];
-        return !(whole.get(x, y))
+        return !(whole.get(x, y));
     }
 
     pub fn is_normal_color(&self, x: usize, y: usize) -> bool {
@@ -79,7 +85,7 @@ impl BitField {
 
     pub fn set_color(&mut self, x: usize, y: usize, c: PuyoColor) {
         let cc = c as u8;
-        for i in 0 .. 3 {
+        for i in 0..3 {
             if (cc & (1 << i)) != 0 {
                 self.m[i as usize].set(x, y);
             } else {
@@ -90,13 +96,14 @@ impl BitField {
 
     /// Returns true if ZENKESHI.
     pub fn is_all_cleared(&self) -> bool {
-        (self.m[0] | self.m[1] | self.m[2]).masked_field_13().is_empty()
+        (self.m[0] | self.m[1] | self.m[2])
+            .masked_field_13()
+            .is_empty()
     }
-
 
     pub fn count_connected(&self, x: usize, y: usize) -> usize {
         if y > field::HEIGHT {
-            return 0
+            return 0;
         }
 
         let c = self.color(x, y);
@@ -106,7 +113,7 @@ impl BitField {
 
     pub fn count_connected_max4(&self, x: usize, y: usize) -> usize {
         if y > field::HEIGHT {
-            return 0
+            return 0;
         }
 
         let c = self.color(x, y);
@@ -121,7 +128,7 @@ impl BitField {
 
     pub fn count_connected_max4_with_color(&self, x: usize, y: usize, c: PuyoColor) -> usize {
         if y > field::HEIGHT {
-            return 0
+            return 0;
         }
 
         let color_bits = self.bits(c).masked_field_12();
@@ -144,31 +151,39 @@ impl BitField {
         let r2 = self.m[2].as_m128i();
 
         let v = match c {
-            PuyoColor::EMPTY => {  // 0
+            PuyoColor::EMPTY => {
+                // 0
                 let x = mm_or_si128(mm_or_si128(r0, r1), r2);
                 mm_xor_si128(x, mm_setr_epi32(!0, !0, !0, !0))
-            },
-            PuyoColor::OJAMA => {  // 1
+            }
+            PuyoColor::OJAMA => {
+                // 1
                 mm_andnot_si128(r2, mm_andnot_si128(r1, r0))
-            },
-            PuyoColor::WALL => {   // 2
+            }
+            PuyoColor::WALL => {
+                // 2
                 mm_andnot_si128(r2, mm_andnot_si128(r0, r1))
-            },
-            PuyoColor::IRON => {   // 3
+            }
+            PuyoColor::IRON => {
+                // 3
                 mm_andnot_si128(r2, mm_and_si128(r0, r1))
-            },
-            PuyoColor::RED => {    // 4
+            }
+            PuyoColor::RED => {
+                // 4
                 mm_andnot_si128(r0, mm_andnot_si128(r1, r2))
-            },
-            PuyoColor::BLUE => {   // 5
+            }
+            PuyoColor::BLUE => {
+                // 5
                 mm_and_si128(r0, mm_andnot_si128(r1, r2))
-            },
-            PuyoColor::YELLOW => { // 6
+            }
+            PuyoColor::YELLOW => {
+                // 6
                 mm_andnot_si128(r0, mm_and_si128(r1, r2))
-            },
-            PuyoColor::GREEN => {  // 7
+            }
+            PuyoColor::GREEN => {
+                // 7
                 mm_and_si128(r0, mm_and_si128(r1, r2))
-            },
+            }
         };
 
         FieldBit::new(v)
@@ -185,12 +200,16 @@ impl BitField {
 
         let color_bits = self.bits(c).masked_field_12();
         let single = FieldBit::from_onebit(x, y);
-        !single.expand_edge().mask(color_bits).not_mask(single).is_empty()
+        !single
+            .expand_edge()
+            .mask(color_bits)
+            .not_mask(single)
+            .is_empty()
     }
 
     pub fn escape_invisible(&mut self) -> BitField {
         let mut escaped = unsafe { BitField::uninitialized() };
-        for i in 0 .. 3 {
+        for i in 0..3 {
             escaped.m[i] = self.m[i].not_masked_field_13();
             self.m[i] = self.m[i].masked_field_13();
         }
@@ -199,7 +218,7 @@ impl BitField {
     }
 
     pub fn recover_invisible(&mut self, bf: &BitField) {
-        for i in 0 .. 3 {
+        for i in 0..3 {
             self.m[i].set_all(bf.m[i]);
         }
     }
@@ -262,7 +281,12 @@ impl BitField {
         current_chain - 1
     }
 
-    pub fn vanish_fast<T: RensaTracker>(&self, current_chain: usize, erased: &mut FieldBit, tracker: &mut T) -> bool {
+    pub fn vanish_fast<T: RensaTracker>(
+        &self,
+        current_chain: usize,
+        erased: &mut FieldBit,
+        tracker: &mut T,
+    ) -> bool {
         let mut erased256 = FieldBit256::empty();
         let mut did_erase = false;
 
@@ -297,14 +321,21 @@ impl BitField {
 
         *erased = erased256.low() | erased256.high();
 
-        let ojama_erased = erased.expand1(self.bits(PuyoColor::OJAMA)).masked_field_12();
+        let ojama_erased = erased
+            .expand1(self.bits(PuyoColor::OJAMA))
+            .masked_field_12();
         erased.set_all(ojama_erased);
 
         tracker.track_vanish(current_chain, erased, &ojama_erased);
         true
     }
 
-    pub fn vanish<T: RensaTracker>(&self, current_chain: usize, erased: &mut FieldBit, tracker: &mut T) -> usize {
+    pub fn vanish<T: RensaTracker>(
+        &self,
+        current_chain: usize,
+        erased: &mut FieldBit,
+        tracker: &mut T,
+    ) -> usize {
         let mut erased256 = FieldBit256::empty();
 
         let mut num_erased_puyos = 0;
@@ -312,12 +343,13 @@ impl BitField {
         let mut long_bonus_coef = 0;
         let mut did_erase = false;
 
-        for i in 0 .. 2 {
+        for i in 0..2 {
             let t = (if i == 0 {
                 self.m[1].andnot(self.m[2])
             } else {
                 self.m[1] & self.m[2]
-            }).masked_field_12();
+            })
+            .masked_field_12();
 
             let high_mask = self.m[0] & t;
             let low_mask = self.m[0].andnot(t);
@@ -374,12 +406,20 @@ impl BitField {
 
         let color_bonus_coef = score::color_bonus(num_colors);
         let chain_bonus_coef = score::chain_bonus(current_chain);
-        let rensa_bonus_coef = score::calculate_rensa_bonus_coef(chain_bonus_coef, long_bonus_coef, color_bonus_coef);
+        let rensa_bonus_coef =
+            score::calculate_rensa_bonus_coef(chain_bonus_coef, long_bonus_coef, color_bonus_coef);
 
-        tracker.track_coef(current_chain, num_erased_puyos, long_bonus_coef, color_bonus_coef);
+        tracker.track_coef(
+            current_chain,
+            num_erased_puyos,
+            long_bonus_coef,
+            color_bonus_coef,
+        );
 
         // Removes ojama.
-        let ojama_erased = erased.expand1(self.bits(PuyoColor::OJAMA)).masked_field_12();
+        let ojama_erased = erased
+            .expand1(self.bits(PuyoColor::OJAMA))
+            .masked_field_12();
         erased.set_all(ojama_erased);
 
         tracker.track_vanish(current_chain, erased, &ojama_erased);
@@ -387,10 +427,17 @@ impl BitField {
         10 * num_erased_puyos * rensa_bonus_coef
     }
 
-    pub fn drop_after_vanish<T: RensaTracker>(&mut self, erased: FieldBit, tracker: &mut T) -> usize {
+    pub fn drop_after_vanish<T: RensaTracker>(
+        &mut self,
+        erased: FieldBit,
+        tracker: &mut T,
+    ) -> usize {
         // Set 1 at non-empty position.
         // Remove 1 bits from the positions where they are erased.
-        let nonempty = mm_andnot_si128(erased.as_m128i(), (self.m[0] | self.m[1] | self.m[2]).as_m128i());
+        let nonempty = mm_andnot_si128(
+            erased.as_m128i(),
+            (self.m[0] | self.m[1] | self.m[2]).as_m128i(),
+        );
 
         // Find the holes. The number of holes for each column is the number of
         // drops of the column.
@@ -418,21 +465,52 @@ impl BitField {
         let new_low_bits = shifted.as_u64x4().extract(0);
         let new_high_bits = shifted.as_u64x4().extract(2);
 
-        let mut d = [self.m[0].as_m128i().as_u64x2(), self.m[1].as_m128i().as_u64x2(), self.m[2].as_m128i().as_u64x2()];
+        let mut d = [
+            self.m[0].as_m128i().as_u64x2(),
+            self.m[1].as_m128i().as_u64x2(),
+            self.m[2].as_m128i().as_u64x2(),
+        ];
 
         if new_low_bits != 0xFFFFFFFFFFFFFFFF {
-            d[0] = d[0].insert(0, pdep_u64(pext_u64(d[0].extract(0), old_low_bits), new_low_bits));
-            d[1] = d[1].insert(0, pdep_u64(pext_u64(d[1].extract(0), old_low_bits), new_low_bits));
-            d[2] = d[2].insert(0, pdep_u64(pext_u64(d[2].extract(0), old_low_bits), new_low_bits));
+            d[0] = d[0].insert(
+                0,
+                pdep_u64(pext_u64(d[0].extract(0), old_low_bits), new_low_bits),
+            );
+            d[1] = d[1].insert(
+                0,
+                pdep_u64(pext_u64(d[1].extract(0), old_low_bits), new_low_bits),
+            );
+            d[2] = d[2].insert(
+                0,
+                pdep_u64(pext_u64(d[2].extract(0), old_low_bits), new_low_bits),
+            );
             if new_high_bits != 0xFFFFFFFFFFFFFFFF {
-                d[0] = d[0].insert(1, pdep_u64(pext_u64(d[0].extract(1), old_high_bits), new_high_bits));
-                d[1] = d[1].insert(1, pdep_u64(pext_u64(d[1].extract(1), old_high_bits), new_high_bits));
-                d[2] = d[2].insert(1, pdep_u64(pext_u64(d[2].extract(1), old_high_bits), new_high_bits));
+                d[0] = d[0].insert(
+                    1,
+                    pdep_u64(pext_u64(d[0].extract(1), old_high_bits), new_high_bits),
+                );
+                d[1] = d[1].insert(
+                    1,
+                    pdep_u64(pext_u64(d[1].extract(1), old_high_bits), new_high_bits),
+                );
+                d[2] = d[2].insert(
+                    1,
+                    pdep_u64(pext_u64(d[2].extract(1), old_high_bits), new_high_bits),
+                );
             }
         } else {
-            d[0] = d[0].insert(1, pdep_u64(pext_u64(d[0].extract(1), old_high_bits), new_high_bits));
-            d[1] = d[1].insert(1, pdep_u64(pext_u64(d[1].extract(1), old_high_bits), new_high_bits));
-            d[2] = d[2].insert(1, pdep_u64(pext_u64(d[2].extract(1), old_high_bits), new_high_bits));
+            d[0] = d[0].insert(
+                1,
+                pdep_u64(pext_u64(d[0].extract(1), old_high_bits), new_high_bits),
+            );
+            d[1] = d[1].insert(
+                1,
+                pdep_u64(pext_u64(d[1].extract(1), old_high_bits), new_high_bits),
+            );
+            d[2] = d[2].insert(
+                1,
+                pdep_u64(pext_u64(d[2].extract(1), old_high_bits), new_high_bits),
+            );
         }
 
         self.m[0] = FieldBit::new(d[0].as_m128i());
@@ -453,8 +531,8 @@ impl std::fmt::Display for BitField {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         // TODO(mayah): More sophisticated way?
         let mut s = String::new();
-        for y in 0 .. 16 {
-            for x in 0 .. 8 {
+        for y in 0..16 {
+            for x in 0..8 {
                 s.push(self.color(x, 15 - y).to_char());
             }
             s.push('\n');
@@ -474,8 +552,8 @@ mod tests {
     #[test]
     fn test_initial() {
         let bf = BitField::new();
-        for x in 0 .. 8 {
-            for y in 0 .. 16 {
+        for x in 0..8 {
+            for y in 0..16 {
                 if x == 0 || x == 7 || y == 0 || y == 15 {
                     assert_eq!(bf.color(x, y), PuyoColor::WALL);
                 } else {
@@ -488,9 +566,10 @@ mod tests {
     #[test]
     fn test_from_str() {
         let bf = BitField::from_str(concat!(
-            "RGBRGB",
-            "RGBRGB",
-            "RGBRGB"));
+            "RGBRGB", // 3
+            "RGBRGB", // 2
+            "RGBRGB"  // 1
+        ));
 
         assert_eq!(bf.color(1, 1), PuyoColor::RED);
         assert_eq!(bf.color(2, 1), PuyoColor::GREEN);
@@ -503,8 +582,14 @@ mod tests {
     #[test]
     fn test_set_color() {
         let colors = [
-            PuyoColor::EMPTY, PuyoColor::OJAMA, PuyoColor::WALL, PuyoColor::IRON,
-            PuyoColor::RED, PuyoColor::BLUE, PuyoColor::YELLOW, PuyoColor::GREEN,
+            PuyoColor::EMPTY,
+            PuyoColor::OJAMA,
+            PuyoColor::WALL,
+            PuyoColor::IRON,
+            PuyoColor::RED,
+            PuyoColor::BLUE,
+            PuyoColor::YELLOW,
+            PuyoColor::GREEN,
         ];
         let mut bf = BitField::new();
 
@@ -517,7 +602,8 @@ mod tests {
     #[test]
     fn test_is_empty() {
         let bf = BitField::from_str(concat!(
-            "RRR..."));
+            "RRR..." // 1
+        ));
 
         assert!(!bf.is_empty(1, 1));
         assert!(!bf.is_empty(2, 1));
@@ -543,15 +629,16 @@ mod tests {
     #[test]
     fn test_each_cell() {
         let bf = BitField::from_str(concat!(
-            "&&&&&&",
-            "OOOOOO",
-            "YYYYYY",
-            "BBBBBB",
-            "GGGGGG",
-            "RRRRRR"));
+            "&&&&&&", // 6
+            "OOOOOO", // 5
+            "YYYYYY", // 4
+            "BBBBBB", // 3
+            "GGGGGG", // 2
+            "RRRRRR"  // 1
+        ));
 
-        for x in 0 .. field::MAP_WIDTH {
-            for y in 0 .. field::MAP_HEIGHT {
+        for x in 0..field::MAP_WIDTH {
+            for y in 0..field::MAP_HEIGHT {
                 for c in color::PuyoColor::all_colors() {
                     assert_eq!(bf.bits(*c).get(x, y), *c == bf.color(x, y));
                     assert_eq!(bf.is_color(x, y, *c), bf.is_color(x, y, *c));
@@ -572,9 +659,10 @@ mod tests {
     #[test]
     fn test_count_connected() {
         let bf = BitField::from_str(concat!(
-            "RRRRRR",
-            "BYBRRY",
-            "RRRBBB"));
+            "RRRRRR", // 3
+            "BYBRRY", // 2
+            "RRRBBB"  // 1
+        ));
 
         assert_eq!(bf.count_connected(1, 1), 3);
         assert_eq!(bf.count_connected(4, 1), 3);
@@ -603,32 +691,39 @@ mod tests {
         let bf = BitField::from_str(concat!(
             ".....R", // 13
             "OOOOOR", // 12
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 11
+            "OOOOOO", // 10
+            "OOOOOO", // 9
             "OOOOOO", // 8
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 7
+            "OOOOOO", // 6
+            "OOOOOO", // 5
             "OOOOOO", // 4
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO"));
+            "OOOOOO", // 3
+            "OOOOOO", // 2
+            "OOOOOO"  // 1
+        ));
 
         assert_eq!(bf.count_connected(6, 12), 1);
         assert_eq!(bf.count_connected_max4(6, 12), 1);
-        assert_eq!(bf.count_connected_max4_with_color(6, 12, bf.color(6, 12)), 1);
+        assert_eq!(
+            bf.count_connected_max4_with_color(6, 12, bf.color(6, 12)),
+            1
+        );
 
         assert_eq!(bf.count_connected(6, 13), 0);
         assert_eq!(bf.count_connected_max4(6, 13), 0);
-        assert_eq!(bf.count_connected_max4_with_color(6, 13, bf.color(6, 13)), 0);
+        assert_eq!(
+            bf.count_connected_max4_with_color(6, 13, bf.color(6, 13)),
+            0
+        );
     }
 
     #[test]
     fn test_is_connected() {
         let bf = BitField::from_str(concat!(
-            "B.B..Y",
-            "RRRBBB",
+            "B.B..Y", // 2
+            "RRRBBB", // 1
         ));
 
         assert!(bf.is_connected(1, 1));
@@ -647,17 +742,18 @@ mod tests {
         let bf = BitField::from_str(concat!(
             ".....R", // 13
             "OOOOOR", // 12
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 11
+            "OOOOOO", // 10
+            "OOOOOO", // 9
             "OOOOOO", // 8
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 7
+            "OOOOOO", // 6
+            "OOOOOO", // 5
             "OOOOOO", // 4
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO"));
+            "OOOOOO", // 3
+            "OOOOOO", // 2
+            "OOOOOO"  // 1
+        ));
 
         assert!(!bf.is_connected(6, 12));
     }
@@ -683,7 +779,8 @@ mod tests_simulation {
         let simulation_testcases = &[
             SimulationTestcase {
                 field: BitField::from_str(concat!(
-                    ".BBBB.")),
+                    ".BBBB." // 1
+                )),
                 chain: 1,
                 score: 40,
                 frame: frame::FRAMES_VANISH_ANIMATION,
@@ -691,25 +788,31 @@ mod tests_simulation {
             },
             SimulationTestcase {
                 field: BitField::from_str(concat!(
-                    ".RBRB.",
-                    "RBRBR.",
-                    "RBRBR.",
-                    "RBRBRR")),
+                    ".RBRB.", // 4
+                    "RBRBR.", // 3
+                    "RBRBR.", // 2
+                    "RBRBRR"  // 1
+                )),
                 chain: 5,
                 score: 40 + 40 * 8 + 40 * 16 + 40 * 32 + 40 * 64,
-                frame: frame::FRAMES_VANISH_ANIMATION * 5 + frame::FRAMES_TO_DROP_FAST[3] * 4 + frame::FRAMES_GROUNDING * 4,
+                frame: frame::FRAMES_VANISH_ANIMATION * 5
+                    + frame::FRAMES_TO_DROP_FAST[3] * 4
+                    + frame::FRAMES_GROUNDING * 4,
                 quick: true,
             },
             SimulationTestcase {
                 field: BitField::from_str(concat!(
-                    ".YGGY.",
-                    "BBBBBB",
-                    "GYBBYG",
-                    "BBBBBB")),
+                    ".YGGY.", // 4
+                    "BBBBBB", // 3
+                    "GYBBYG", // 2
+                    "BBBBBB"  // 1
+                )),
                 chain: 1,
                 score: 140 * 10,
-                frame: frame::FRAMES_VANISH_ANIMATION + frame::FRAMES_TO_DROP_FAST[3] + frame::FRAMES_GROUNDING,
-                quick: false
+                frame: frame::FRAMES_VANISH_ANIMATION
+                    + frame::FRAMES_TO_DROP_FAST[3]
+                    + frame::FRAMES_GROUNDING,
+                quick: false,
             },
         ];
 
@@ -732,13 +835,15 @@ mod tests_simulation {
     #[test]
     fn test_vanish_1() {
         let bf = BitField::from_str(concat!(
-            "..YY..",
-            "GGGGYY",
-            "RRRROY"));
+            "..YY..", // 3
+            "GGGGYY", // 2
+            "RRRROY"  // 1
+        ));
 
         let expected = FieldBit::from_str(concat!(
-            "1111..",
-            "11111."));
+            "1111..", // 2
+            "11111."  // 1
+        ));
 
         let mut vanishing = unsafe { FieldBit::uninitialized() };
         let mut tracker = RensaNonTracker::new();
@@ -752,14 +857,16 @@ mod tests_simulation {
     #[test]
     fn test_vanish_2() {
         let bf = BitField::from_str(concat!(
-            "OOOOOO",
-            "OOGGOO",
-            "OOGGOO"));
+            "OOOOOO", // 3
+            "OOGGOO", // 2
+            "OOGGOO"  // 1
+        ));
 
         let expected = FieldBit::from_str(concat!(
-            "..11..",
-            ".1111.",
-            ".1111."));
+            "..11..", // 3
+            ".1111.", // 2
+            ".1111."  // 1
+        ));
 
         let mut vanishing = unsafe { FieldBit::uninitialized() };
         let mut tracker = RensaNonTracker::new();
@@ -775,17 +882,18 @@ mod tests_simulation {
         let bf = BitField::from_str(concat!(
             "....RR", // 13
             "OO.ORR", // 12
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 11
+            "OOOOOO", // 10
+            "OOOOOO", // 9
             "OOOOOO", // 8
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 7
+            "OOOOOO", // 6
+            "OOOOOO", // 5
             "OOOOOO", // 4
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO"));
+            "OOOOOO", // 3
+            "OOOOOO", // 2
+            "OOOOOO"  // 1
+        ));
 
         let mut vanishing = unsafe { FieldBit::uninitialized() };
         let mut tracker = RensaNonTracker::new();
@@ -796,10 +904,12 @@ mod tests_simulation {
     #[test]
     fn test_drop_after_vanish_fast() {
         let mut bf = BitField::from_str(concat!(
-            "..BB..",
-            "RRRR.."));
+            "..BB..", // 2
+            "RRRR.."  // 1
+        ));
         let erased = FieldBit::from_str(concat!(
-            "1111.."));
+            "1111.." // 1
+         ));
 
         let mut tracker = RensaNonTracker::new();
 
@@ -808,7 +918,8 @@ mod tests_simulation {
         bf.recover_invisible(&invisible);
 
         let expected = BitField::from_str(concat!(
-            "..BB.."));
+            "..BB.." // 1
+        ));
 
         assert_eq!(expected, bf);
     }

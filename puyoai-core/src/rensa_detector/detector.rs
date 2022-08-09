@@ -1,6 +1,6 @@
-use field::{self, CoreField};
-use column_puyo_list::ColumnPuyoList;
 use color::{PuyoColor, NUM_PUYO_COLORS};
+use column_puyo_list::ColumnPuyoList;
+use field::{self, CoreField};
 use rensa_detector::PurposeForFindingRensa;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -17,7 +17,12 @@ pub struct RensaDetector {
 }
 
 impl RensaDetector {
-    pub fn new(mode: Mode, max_puyo_for_key: usize, max_puyo_for_fire: usize, max_height: usize) -> RensaDetector {
+    pub fn new(
+        mode: Mode,
+        max_puyo_for_key: usize,
+        max_puyo_for_fire: usize,
+        max_height: usize,
+    ) -> RensaDetector {
         RensaDetector {
             mode: mode,
             max_puyo_for_key: max_puyo_for_key,
@@ -34,12 +39,15 @@ impl RensaDetector {
         RensaDetector::new(Mode::Float, 3, 3, 13)
     }
 
-    pub fn detect<Callback>(&self,
-                            original_field: &CoreField,
-                            purpose: PurposeForFindingRensa,
-                            prohibits: &[bool],
-                            callback: Callback)
-                            where Callback: FnMut(CoreField, &ColumnPuyoList) {
+    pub fn detect<Callback>(
+        &self,
+        original_field: &CoreField,
+        purpose: PurposeForFindingRensa,
+        prohibits: &[bool],
+        callback: Callback,
+    ) where
+        Callback: FnMut(CoreField, &ColumnPuyoList),
+    {
         let max_complement_puyo = {
             match purpose {
                 PurposeForFindingRensa::ForKey => self.max_puyo_for_key,
@@ -48,10 +56,14 @@ impl RensaDetector {
         };
 
         match self.mode {
-            Mode::Drop => {
-                detect_by_drop(original_field, prohibits, purpose,
-                               max_complement_puyo, self.max_height, callback)
-            },
+            Mode::Drop => detect_by_drop(
+                original_field,
+                prohibits,
+                purpose,
+                max_complement_puyo,
+                self.max_height,
+                callback,
+            ),
             Mode::Float => {
                 unimplemented!()
             }
@@ -60,13 +72,16 @@ impl RensaDetector {
 }
 
 /// Detects rensa by `drop` strategy.
-pub fn detect_by_drop<Callback>(original_field: &CoreField,
-                                prohibits: &[bool],
-                                purpose: PurposeForFindingRensa,
-                                max_complement_puyos: usize,
-                                max_puyo_height: usize,
-                                mut callback: Callback)
-                                where Callback: FnMut(CoreField, &ColumnPuyoList) {
+pub fn detect_by_drop<Callback>(
+    original_field: &CoreField,
+    prohibits: &[bool],
+    purpose: PurposeForFindingRensa,
+    max_complement_puyos: usize,
+    max_puyo_height: usize,
+    mut callback: Callback,
+) where
+    Callback: FnMut(CoreField, &ColumnPuyoList),
+{
     let mut visited = [[false; NUM_PUYO_COLORS]; field::MAP_WIDTH];
 
     let normal_color_bits = original_field.field().normal_color_bits();
@@ -94,7 +109,8 @@ pub fn detect_by_drop<Callback>(original_field: &CoreField,
                 // CAAACC
                 //
                 // So, we should be able to skip this.
-                if purpose == PurposeForFindingRensa::ForFire && !original_field.is_connected(x, y) {
+                if purpose == PurposeForFindingRensa::ForFire && !original_field.is_connected(x, y)
+                {
                     continue;
                 }
             } else {
@@ -148,17 +164,17 @@ mod tests {
     #[test]
     fn test_detect_by_drop() {
         let original = CoreField::from_str(concat!(
-            ".RGYG.",
-            "RGYGB.",
-            "RGYGB.",
-            "RGYGB.",
+            ".RGYG.", // 4
+            "RGYGB.", // 3
+            "RGYGB.", // 2
+            "RGYGB.", // 1
         ));
 
         let expected = CoreField::from_str(concat!(
-            ".RGYG.",
-            "RGYGB.",
-            "RGYGB.",
-            "RGYGBB",
+            ".RGYG.", // 4
+            "RGYGB.", // 3
+            "RGYGB.", // 2
+            "RGYGBB", // 1
         ));
 
         let mut found = false;
@@ -177,7 +193,14 @@ mod tests {
             };
 
             let no_prohibits = &[false; 8];
-            detect_by_drop(&original, no_prohibits, PurposeForFindingRensa::ForFire, 1, 12, callback);
+            detect_by_drop(
+                &original,
+                no_prohibits,
+                PurposeForFindingRensa::ForFire,
+                1,
+                12,
+                callback,
+            );
         }
         assert!(found);
     }

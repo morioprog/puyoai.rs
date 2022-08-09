@@ -9,9 +9,7 @@ pub struct FieldBit256 {
 
 impl FieldBit256 {
     pub fn new(m: m256i) -> FieldBit256 {
-        FieldBit256 {
-            m: m,
-        }
+        FieldBit256 { m: m }
     }
 
     pub unsafe fn uninitialized() -> FieldBit256 {
@@ -20,15 +18,13 @@ impl FieldBit256 {
 
     pub fn empty() -> FieldBit256 {
         FieldBit256 {
-            m: mm256_setzero_si256()
+            m: mm256_setzero_si256(),
         }
     }
 
     pub fn from_low_high(low: FieldBit, high: FieldBit) -> FieldBit256 {
         let m = mm256_inserti128_si256(mm256_castsi128_si256(low.as_m128i()), high.as_m128i(), 1);
-        FieldBit256 {
-            m: m
-        }
+        FieldBit256 { m: m }
     }
 
     #[allow(dead_code)]
@@ -75,7 +71,8 @@ impl FieldBit256 {
             expanded = mm256_srli_si256(seed, 2) | expanded;
             expanded = mask.m & expanded;
 
-            if mm256_testc_si256(seed, expanded) != 0 { // seed == expanded
+            if mm256_testc_si256(seed, expanded) != 0 {
+                // seed == expanded
                 return FieldBit256::new(expanded);
             }
             seed = expanded;
@@ -133,9 +130,9 @@ impl FieldBit256 {
         let shift = ((x << 4) | y) & 0x3F;
         let zero = mm256_setzero_si256();
         if x < 4 {
-            return mm256_insert_epi64(zero, 1 << shift, 0)
+            return mm256_insert_epi64(zero, 1 << shift, 0);
         } else {
-            return mm256_insert_epi64(zero, 1 << shift, 1)
+            return mm256_insert_epi64(zero, 1 << shift, 1);
         }
     }
 
@@ -145,9 +142,9 @@ impl FieldBit256 {
         let shift = ((x << 4) | y) & 0x3F;
         let zero = mm256_setzero_si256();
         if x < 4 {
-            return mm256_insert_epi64(zero, 1 << shift, 2)
+            return mm256_insert_epi64(zero, 1 << shift, 2);
         } else {
-            return mm256_insert_epi64(zero, 1 << shift, 3)
+            return mm256_insert_epi64(zero, 1 << shift, 3);
         }
     }
 }
@@ -178,8 +175,8 @@ mod tests {
     fn test_constructor() {
         let fb256 = FieldBit256::empty();
 
-        for x in 0 .. 8 {
-            for y in 0 .. 16 {
+        for x in 0..8 {
+            for y in 0..16 {
                 assert!(!fb256.get_low(x, y));
                 assert!(!fb256.get_high(x, y));
             }
@@ -213,20 +210,23 @@ mod tests {
     #[test]
     fn test_expand() {
         let mask_high = FieldBit::from_str(concat!(
-            "......",
-            "11..11",
-            "11..11",
-            "......",
-            "111111"));
+            "......", // 5
+            "11..11", // 4
+            "11..11", // 3
+            "......", // 2
+            "111111"  // 1
+        ));
         let mask_low = FieldBit::from_str(concat!(
-            "111111",
-            ".....1",
-            "111111",
-            "1.....",
-            "111111"));
+            "111111", // 5
+            ".....1", // 4
+            "111111", // 3
+            "1.....", // 2
+            "111111"  // 1
+        ));
 
         let expected_high = FieldBit::from_str(concat!(
-            "111111"));
+             "111111" // 1
+        ));
         let expected_low = mask_low;
 
         let mask = FieldBit256::from_low_high(mask_low, mask_high);
@@ -244,22 +244,35 @@ mod tests {
     fn test_find_vanishing_bits_1() {
         let fb256 = {
             let f = FieldBit::from_str(concat!(
-                ".1....",
-                "11..1.",
-                ".1.111",
-                "1...1.",
-                "11.111",
-                "1...1."));
+                ".1....", // 6
+                "11..1.", // 5
+                ".1.111", // 4
+                "1...1.", // 3
+                "11.111", // 2
+                "1...1."  // 1
+            ));
             FieldBit256::from_low_high(f, f)
         };
 
         let mut vanishing = unsafe { FieldBit256::uninitialized() };
         assert!(fb256.find_vanishing_bits(&mut vanishing));
 
-        for x in 1 .. field::WIDTH + 1 {
-            for y in 1 .. field::HEIGHT + 1 {
-                assert_eq!(vanishing.get_low(x, y), fb256.get_low(x, y), "x={}, y={}", x, y);
-                assert_eq!(vanishing.get_high(x, y), fb256.get_high(x, y), "x={}, y={}", x, y);
+        for x in 1..field::WIDTH + 1 {
+            for y in 1..field::HEIGHT + 1 {
+                assert_eq!(
+                    vanishing.get_low(x, y),
+                    fb256.get_low(x, y),
+                    "x={}, y={}",
+                    x,
+                    y
+                );
+                assert_eq!(
+                    vanishing.get_high(x, y),
+                    fb256.get_high(x, y),
+                    "x={}, y={}",
+                    x,
+                    y
+                );
             }
         }
     }
@@ -268,18 +281,19 @@ mod tests {
     fn test_find_vanishing_bits_2() {
         let fb256 = {
             let f = FieldBit::from_str(concat!(
-                ".....1",
-                ".111.1",
-                ".....1",
-                ".1.11."));
+                ".....1", // 4
+                ".111.1", // 3
+                ".....1", // 2
+                ".1.11."  // 1
+            ));
             FieldBit256::from_low_high(f, f)
         };
 
         let mut vanishing = unsafe { FieldBit256::uninitialized() };
         assert!(!fb256.find_vanishing_bits(&mut vanishing));
 
-        for x in 1 .. field::WIDTH + 1 {
-            for y in 1 .. field::HEIGHT + 1 {
+        for x in 1..field::WIDTH + 1 {
+            for y in 1..field::HEIGHT + 1 {
                 assert!(!vanishing.get_low(x, y));
                 assert!(!vanishing.get_high(x, y));
             }

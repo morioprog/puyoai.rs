@@ -1,16 +1,18 @@
-use field::{FieldHeight, FieldIsEmpty};
 use decision::Decision;
+use field::{FieldHeight, FieldIsEmpty};
 
-pub struct PuyoController {
-}
+pub struct PuyoController {}
 
 impl PuyoController {
     pub fn new() -> PuyoController {
-        PuyoController {
-        }
+        PuyoController {}
     }
 
-    pub fn is_reachable<F: FieldHeight + FieldIsEmpty>(&self, field: &F, decision: &Decision) -> bool {
+    pub fn is_reachable<F: FieldHeight + FieldIsEmpty>(
+        &self,
+        field: &F,
+        decision: &Decision,
+    ) -> bool {
         debug_assert!(decision.is_valid());
 
         const CHECKER: &'static [&'static [usize]] = &[
@@ -69,12 +71,11 @@ impl PuyoController {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use field::{FieldWithHeight, PuyoPlainField};
     use decision::Decision;
+    use field::{FieldWithHeight, PuyoPlainField};
 
     #[test]
     fn test_is_reachable_empty_field() {
@@ -91,17 +92,18 @@ mod tests {
         let pc = PuyoController::new();
         let f = FieldWithHeight::from_field(PuyoPlainField::from_str(concat!(
             "......", // 12
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 11
+            "OOOOOO", // 10
+            "OOOOOO", // 9
             "OOOOOO", // 8
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 7
+            "OOOOOO", // 6
+            "OOOOOO", // 5
             "OOOOOO", // 4
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO")));
+            "OOOOOO", // 3
+            "OOOOOO", // 2
+            "OOOOOO"  // 1
+        )));
 
         for d in Decision::all_valid_decisions() {
             assert!(pc.is_reachable(&f, d));
@@ -113,17 +115,18 @@ mod tests {
         let pc = PuyoController::new();
         let f = FieldWithHeight::from_field(PuyoPlainField::from_str(concat!(
             "......", // 12
-            "......",
-            ".....O",
-            "OOOOOO",
+            "......", // 11
+            ".....O", // 10
+            "OOOOOO", // 9
             "OOOOOO", // 8
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 7
+            "OOOOOO", // 6
+            "OOOOOO", // 5
             "OOOOOO", // 4
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO")));
+            "OOOOOO", // 3
+            "OOOOOO", // 2
+            "OOOOOO"  // 1
+        )));
 
         for d in Decision::all_valid_decisions() {
             assert!(pc.is_reachable(&f, d));
@@ -135,22 +138,20 @@ mod tests {
         let pc = PuyoController::new();
         let f = FieldWithHeight::from_field(PuyoPlainField::from_str(concat!(
             "O....O", // 12
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 11
+            "OOOOOO", // 10
+            "OOOOOO", // 9
             "OOOOOO", // 8
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 7
+            "OOOOOO", // 6
+            "OOOOOO", // 5
             "OOOOOO", // 4
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO")));
+            "OOOOOO", // 3
+            "OOOOOO", // 2
+            "OOOOOO"  // 1
+        )));
 
-        let unreachables = [
-            Decision::new(1, 2),
-            Decision::new(6, 2)
-        ];
+        let unreachables = [Decision::new(1, 2), Decision::new(6, 2)];
 
         for d in Decision::all_valid_decisions() {
             assert_eq!(pc.is_reachable(&f, d), !unreachables.contains(d));
@@ -162,22 +163,20 @@ mod tests {
         let pc = PuyoController::new();
         let f = FieldWithHeight::from_field(PuyoPlainField::from_str(concat!(
             ".O..O.", // 12
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 11
+            "OOOOOO", // 10
+            "OOOOOO", // 9
             "OOOOOO", // 8
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 7
+            "OOOOOO", // 6
+            "OOOOOO", // 5
             "OOOOOO", // 4
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO")));
+            "OOOOOO", // 3
+            "OOOOOO", // 2
+            "OOOOOO"  // 1
+        )));
 
-        let unreachables = [
-            Decision::new(2, 2),
-            Decision::new(5, 2)
-        ];
+        let unreachables = [Decision::new(2, 2), Decision::new(5, 2)];
 
         for d in Decision::all_valid_decisions() {
             assert_eq!(pc.is_reachable(&f, d), !unreachables.contains(d));
@@ -189,21 +188,20 @@ mod tests {
         let pc = PuyoController::new();
         let f = FieldWithHeight::from_field(PuyoPlainField::from_str(concat!(
             "...O..", // 12
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 11
+            "OOOOOO", // 10
+            "OOOOOO", // 9
             "OOOOOO", // 8
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 7
+            "OOOOOO", // 6
+            "OOOOOO", // 5
             "OOOOOO", // 4
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO")));
+            "OOOOOO", // 3
+            "OOOOOO", // 2
+            "OOOOOO"  // 1
+        )));
 
-        let unreachables = &[
-            Decision::new(4, 2),
-        ];
+        let unreachables = &[Decision::new(4, 2)];
 
         for d in Decision::all_valid_decisions() {
             assert_eq!(pc.is_reachable(&f, d), !unreachables.contains(d));
@@ -215,22 +213,20 @@ mod tests {
         let pc = PuyoController::new();
         let f = FieldWithHeight::from_field(PuyoPlainField::from_str(concat!(
             ".O.O..", // 12
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 11
+            "OOOOOO", // 10
+            "OOOOOO", // 9
             "OOOOOO", // 8
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 7
+            "OOOOOO", // 6
+            "OOOOOO", // 5
             "OOOOOO", // 4
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO")));
+            "OOOOOO", // 3
+            "OOOOOO", // 2
+            "OOOOOO"  // 1
+        )));
 
-        let unreachables = [
-            Decision::new(2, 2),
-            Decision::new(4, 2),
-        ];
+        let unreachables = [Decision::new(2, 2), Decision::new(4, 2)];
 
         for d in Decision::all_valid_decisions() {
             assert_eq!(pc.is_reachable(&f, d), !unreachables.contains(d));
@@ -242,22 +238,20 @@ mod tests {
         let pc = PuyoController::new();
         let f = FieldWithHeight::from_field(PuyoPlainField::from_str(concat!(
             ".O.O..", // 12
-            ".O.O..",
-            ".O.O..",
-            ".O.O..",
+            ".O.O..", // 11
+            ".O.O..", // 10
+            ".O.O..", // 9
             "OOOOOO", // 8
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 7
+            "OOOOOO", // 6
+            "OOOOOO", // 5
             "OOOOOO", // 4
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO")));
+            "OOOOOO", // 3
+            "OOOOOO", // 2
+            "OOOOOO"  // 1
+        )));
 
-        let unreachables = [
-            Decision::new(2, 2),
-            Decision::new(4, 2),
-        ];
+        let unreachables = [Decision::new(2, 2), Decision::new(4, 2)];
 
         for d in Decision::all_valid_decisions() {
             assert_eq!(pc.is_reachable(&f, d), !unreachables.contains(d));
@@ -270,17 +264,18 @@ mod tests {
         let f = FieldWithHeight::from_field(PuyoPlainField::from_str(concat!(
             "O...OO", // 13
             "OO.OOO", // 12
-            "OO.OOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OO.OOO", // 11
+            "OOOOOO", // 10
+            "OOOOOO", // 9
             "OOOOOO", // 8
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO",
+            "OOOOOO", // 7
+            "OOOOOO", // 6
+            "OOOOOO", // 5
             "OOOOOO", // 4
-            "OOOOOO",
-            "OOOOOO",
-            "OOOOOO")));
+            "OOOOOO", // 3
+            "OOOOOO", // 2
+            "OOOOOO"  // 1
+        )));
 
         let reachables = [
             Decision::new(2, 0),

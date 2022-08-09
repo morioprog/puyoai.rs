@@ -29,7 +29,7 @@ impl<C: Color> PlainField<C> {
                 [w, e, e, e, e, e, e, e, e, e, e, e, e, e, e, w],
                 [w, e, e, e, e, e, e, e, e, e, e, e, e, e, e, w],
                 [w, w, w, w, w, w, w, w, w, w, w, w, w, w, w, w],
-            ]
+            ],
         }
     }
 
@@ -75,10 +75,10 @@ impl<C: Color> PlainField<C> {
     // Returns the number of max drops.
     pub fn drop(&mut self) -> usize {
         let mut max_drops = 0;
-        for x in 1 .. 7 {
+        for x in 1..7 {
             let mut h = 1;
             let mut drops = 0;
-            for y in 1 .. 14 {
+            for y in 1..14 {
                 if self.is_empty(x, y) {
                     drops += 1;
                     continue;
@@ -99,9 +99,15 @@ impl<C: Color> PlainField<C> {
     }
 
     // Returns new head.
-    pub fn fill_same_color_position(&self, x: usize, y: usize, c: C,
-                                    head: usize, queue: &mut [Position; 72],
-                                    checker: &mut FieldChecker) -> usize {
+    pub fn fill_same_color_position(
+        &self,
+        x: usize,
+        y: usize,
+        c: C,
+        head: usize,
+        queue: &mut [Position; 72],
+        checker: &mut FieldChecker,
+    ) -> usize {
         if y > field::HEIGHT {
             return head;
         }
@@ -128,7 +134,10 @@ impl<C: Color> PlainField<C> {
                 write_head += 1;
                 checker.set(p.x - 1, p.y);
             }
-            if self.is_color(p.x, p.y + 1, c) && !checker.get(p.x, p.y + 1) && p.y + 1 <= field::HEIGHT {
+            if self.is_color(p.x, p.y + 1, c)
+                && !checker.get(p.x, p.y + 1)
+                && p.y + 1 <= field::HEIGHT
+            {
                 queue[write_head] = Position::new(p.x, p.y + 1);
                 write_head += 1;
                 checker.set(p.x, p.y + 1);
@@ -148,7 +157,12 @@ impl<C: Color> PlainField<C> {
         self.count_connected_puyos_with_checker(x, y, &mut checker)
     }
 
-    pub fn count_connected_puyos_with_checker(&self, x: usize, y: usize, checker: &mut FieldChecker) -> usize {
+    pub fn count_connected_puyos_with_checker(
+        &self,
+        x: usize,
+        y: usize,
+        checker: &mut FieldChecker,
+    ) -> usize {
         let mut positions = [Position::new(0, 0); 72];
         self.fill_same_color_position(x, y, self.color(x, y), 0, &mut positions, checker)
     }
@@ -309,21 +323,28 @@ impl<C: Color> PlainField<C> {
     pub fn vanish(&mut self, current_chain: usize) -> usize {
         let mut checker = FieldChecker::new();
         // All the positions of erased puyos will be stored here.
-        let mut erase_queue : [Position; 72] = [Position::new(0, 0); 72];
+        let mut erase_queue: [Position; 72] = [Position::new(0, 0); 72];
         let mut erase_queue_head = 0;
 
-        let mut used_colors : [bool; 8] = [false; 8];
+        let mut used_colors: [bool; 8] = [false; 8];
         let mut num_used_colors = 0;
         let mut long_bonus_coef = 0;
 
-        for x in 1 .. (field::WIDTH + 1) {
-            for y in 1 .. (field::HEIGHT + 1) {
+        for x in 1..(field::WIDTH + 1) {
+            for y in 1..(field::HEIGHT + 1) {
                 if self.is_empty(x, y) || checker.get(x, y) || !self.color(x, y).is_normal_color() {
                     continue;
                 }
 
                 let c = self.color(x, y);
-                let new_head = self.fill_same_color_position(x, y, c, erase_queue_head, &mut erase_queue, &mut checker);
+                let new_head = self.fill_same_color_position(
+                    x,
+                    y,
+                    c,
+                    erase_queue_head,
+                    &mut erase_queue,
+                    &mut checker,
+                );
 
                 let connected_puyo_num = new_head - erase_queue_head;
                 if connected_puyo_num < 4 {
@@ -372,7 +393,7 @@ impl<C: Color> PlainField<C> {
         let rensa_bonus_coef = score::calculate_rensa_bonus_coef(
             score::chain_bonus(current_chain),
             long_bonus_coef,
-            score::color_bonus(num_used_colors)
+            score::color_bonus(num_used_colors),
         );
         10 * erase_queue_head * rensa_bonus_coef
     }
@@ -443,7 +464,7 @@ impl<C: Color> PartialEq<PlainField<C>> for PlainField<C> {
         for x in 0..8 {
             for y in 0..16 {
                 if self.color(x, y) != other.color(x, y) {
-                    return false
+                    return false;
                 }
             }
         }
@@ -472,9 +493,9 @@ pub type RealPlainField = PlainField<RealColor>;
 
 #[cfg(test)]
 mod tests {
-    use std::mem;
     use color::PuyoColor;
     use field::{self, PuyoPlainField};
+    use std::mem;
 
     #[test]
     fn test_memory_size() {
@@ -521,15 +542,17 @@ mod tests {
     #[test]
     fn test_drop() {
         let mut pf = PuyoPlainField::from_str(concat!(
-            "RRRBBB",
-            "......",
-            "RRRBBB",
-            "......",
-            "RRRBBB"));
+            "RRRBBB", // 5
+            "......", // 4
+            "RRRBBB", // 3
+            "......", // 2
+            "RRRBBB"  // 1
+        ));
         let expected = PuyoPlainField::from_str(concat!(
-            "RRRBBB",
-            "RRRBBB",
-            "RRRBBB"));
+            "RRRBBB", // 3
+            "RRRBBB", // 2
+            "RRRBBB"  // 1
+        ));
 
         pf.drop();
         assert!(pf == expected);
@@ -541,33 +564,35 @@ mod tests {
             "OOOOOO", // 14
             "OOOOOO", // 13
             "......", // 12
-            "......",
-            "......",
-            "......",
+            "......", // 11
+            "......", // 10
+            "......", // 9
             "......", // 8
-            "......",
-            "......",
-            "......",
+            "......", // 7
+            "......", // 6
+            "......", // 5
             "......", // 4
-            "......",
-            "......",
-            "......"));
+            "......", // 3
+            "......", // 2
+            "......"  // 1
+        ));
 
         let expected = PuyoPlainField::from_str(concat!(
             "OOOOOO", // 14
             "......", // 13
             "......", // 12
-            "......",
-            "......",
-            "......",
+            "......", // 11
+            "......", // 10
+            "......", // 9
             "......", // 8
-            "......",
-            "......",
-            "......",
+            "......", // 7
+            "......", // 6
+            "......", // 5
             "......", // 4
-            "......",
-            "......",
-            "OOOOOO"));
+            "......", // 3
+            "......", // 2
+            "OOOOOO"  // 1
+        ));
 
         pf.drop();
         assert!(pf == expected);
@@ -577,49 +602,56 @@ mod tests {
     fn test_count_connected_puyos() {
         // I O S Z L J T
         let fi = PuyoPlainField::from_str(concat!(
-            "R.....",
-            "R.....",
-            "R.....",
-            "R.....",
-            "......",
-            "RRRR.."));
+            "R.....", // 6
+            "R.....", // 5
+            "R.....", // 4
+            "R.....", // 3
+            "......", // 2
+            "RRRR.."  // 1
+        ));
         let fo = PuyoPlainField::from_str(concat!(
-            "RR....",
-            "RR...."));
+            "RR....", // 2
+            "RR...."  // 1
+        ));
         let fs = PuyoPlainField::from_str(concat!(
-            "....R.",
-            ".RR.RR",
-            "RR...R"));
+            "....R.", // 3
+            ".RR.RR", // 2
+            "RR...R"  // 1
+        ));
         let fz = PuyoPlainField::from_str(concat!(
-            ".....R",
-            "RR..RR",
-            ".RR.R."));
+            ".....R", // 3
+            "RR..RR", // 2
+            ".RR.R."  // 1
+        ));
         let fl = PuyoPlainField::from_str(concat!(
-            "RR....",
-            ".R...R",
-            ".R.RRR",
-            "R.....",
-            "R..RRR",
-            "RR.R.."));
+            "RR....", // 6
+            ".R...R", // 5
+            ".R.RRR", // 4
+            "R.....", // 3
+            "R..RRR", // 2
+            "RR.R.."  // 1
+        ));
         let fj = PuyoPlainField::from_str(concat!(
-            "RR....",
-            "R..R..",
-            "R..RRR",
-            ".R....",
-            ".R.RRR",
-            "RR...R"));
+            "RR....", // 6
+            "R..R..", // 5
+            "R..RRR", // 4
+            ".R....", // 3
+            ".R.RRR", // 2
+            "RR...R"  // 1
+        ));
         let ft = PuyoPlainField::from_str(concat!(
-            ".R....",
-            "RR..R.",
-            ".R.RRR",
-            "R.....",
-            "RR.RRR",
-            "R...R."));
+            ".R....", // 6
+            "RR..R.", // 5
+            ".R.RRR", // 4
+            "R.....", // 3
+            "RR.RRR", // 2
+            "R...R."  // 1
+        ));
 
         let fields = [fi, fo, fs, fz, fl, fj, ft];
         for pf in fields.iter() {
-            for x in 1 .. (field::WIDTH + 1) {
-                for y in 1 .. (field::HEIGHT + 1) {
+            for x in 1..(field::WIDTH + 1) {
+                for y in 1..(field::HEIGHT + 1) {
                     if !pf.is_color(x, y, PuyoColor::RED) {
                         continue;
                     }
@@ -634,22 +666,22 @@ mod tests {
     #[test]
     fn test_count_connected_puyos_edge_case() {
         let pf = PuyoPlainField::from_str(concat!(
-            "RRRBBB",
+            "RRRBBB", // 13
             "RRRBBB", // 12
-            "......",
-            "......",
-            "......",
+            "......", // 11
+            "......", // 10
+            "......", // 9
             "......", // 8
-            "......",
-            "......",
-            "......",
+            "......", // 7
+            "......", // 6
+            "......", // 5
             "......", // 4
-            "......",
-            "......",
-            "......",
+            "......", // 3
+            "......", // 2
+            "......", // 1
         ));
 
-        for x in 1 .. (field::WIDTH + 1) {
+        for x in 1..(field::WIDTH + 1) {
             assert_eq!(3, pf.count_connected_puyos(x, 12));
             assert_eq!(3, pf.count_connected_puyos_max4(x, 12));
             assert_eq!(0, pf.count_connected_puyos(x, 13));
@@ -663,17 +695,18 @@ mod tests {
             ".....O", // 14
             "....OO", // 13
             "...OOO", // 12
-            "..OOOO",
-            "..OOOO",
-            "..OOOO",
+            "..OOOO", // 11
+            "..OOOO", // 10
+            "..OOOO", // 9
             "..OOOO", // 8
-            "..OOOO",
-            "..OOOO",
-            "..OOOO",
+            "..OOOO", // 7
+            "..OOOO", // 6
+            "..OOOO", // 5
             "..OOOO", // 4
-            "..OOOO",
-            "..OOOO",
-            ".OOOOO"));
+            "..OOOO", // 3
+            "..OOOO", // 2
+            ".OOOOO"  // 1
+        ));
         let mut height = [0u16; 8];
         pf.calculate_height(&mut height);
 
@@ -683,7 +716,7 @@ mod tests {
         assert_eq!(11, height[3]);
         assert_eq!(12, height[4]);
         assert_eq!(13, height[5]);
-        assert_eq!(13, height[6]);  // Not 14, but 13.
+        assert_eq!(13, height[6]); // Not 14, but 13.
         assert_eq!(0, height[7]);
     }
 }

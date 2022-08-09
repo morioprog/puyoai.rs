@@ -18,20 +18,41 @@ impl RensaCoefTracker {
     }
 
     pub fn coef(&self, nth_chain: usize) -> usize {
-        score::calculate_rensa_bonus_coef(score::chain_bonus(nth_chain),
-                                          self.long_bonus_coef[nth_chain],
-                                          self.color_bonus_coef[nth_chain])
+        score::calculate_rensa_bonus_coef(
+            score::chain_bonus(nth_chain),
+            self.long_bonus_coef[nth_chain],
+            self.color_bonus_coef[nth_chain],
+        )
     }
 }
 
 impl RensaTracker for RensaCoefTracker {
-    fn track_coef(&mut self, nth_chain: usize, num_erased: usize, long_bonus_coef: usize, color_bonus_coef: usize) {
+    fn track_coef(
+        &mut self,
+        nth_chain: usize,
+        num_erased: usize,
+        long_bonus_coef: usize,
+        color_bonus_coef: usize,
+    ) {
         self.num_erased[nth_chain] = num_erased;
         self.long_bonus_coef[nth_chain] = long_bonus_coef;
         self.color_bonus_coef[nth_chain] = color_bonus_coef;
     }
-    fn track_vanish(&mut self, _nth_chain: usize, _vanished: &FieldBit, _ojama_vanished: &FieldBit) {}
-    fn track_drop(&mut self, _old_low_bits: u64, _old_high_bits: u64, _new_low_bits: u64, _new_high_bits: u64) {}
+    fn track_vanish(
+        &mut self,
+        _nth_chain: usize,
+        _vanished: &FieldBit,
+        _ojama_vanished: &FieldBit,
+    ) {
+    }
+    fn track_drop(
+        &mut self,
+        _old_low_bits: u64,
+        _old_high_bits: u64,
+        _new_low_bits: u64,
+        _new_high_bits: u64,
+    ) {
+    }
 }
 
 #[cfg(test)]
@@ -51,7 +72,7 @@ mod tests {
     }
 }
 
-#[cfg(all(test, target_feature = "avx2", target_feature="bmi2"))]
+#[cfg(all(test, target_feature = "avx2", target_feature = "bmi2"))]
 mod tests_for_avx2 {
     use super::RensaCoefTracker;
     use field::BitField;
@@ -59,10 +80,11 @@ mod tests_for_avx2 {
     #[test]
     fn test_simulate() {
         let mut bf = BitField::from_str(concat!(
-            "R...RR",
-            "RGBRYR",
-            "RRGBBY",
-            "GGBYYR"));
+            "R...RR", // 4
+            "RGBRYR", // 3
+            "RRGBBY", // 2
+            "GGBYYR"  // 1
+        ));
         let mut tracker = RensaCoefTracker::new();
         let rensa_result = bf.simulate_with_tracker(&mut tracker);
 
