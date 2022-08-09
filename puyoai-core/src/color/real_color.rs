@@ -1,4 +1,4 @@
-use color::Color;
+use super::color::Color;
 use std;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -58,6 +58,20 @@ impl Color for RealColor {
             b'Y' | b'y' => RealColor::YELLOW,
             b'G' | b'g' => RealColor::GREEN,
             b'P' | b'p' => RealColor::PURPLE,
+            _ => RealColor::EMPTY,
+        }
+    }
+
+    fn from_u32(x: u32) -> RealColor {
+        match x {
+            0 => RealColor::EMPTY,
+            1 => RealColor::WALL,
+            2 => RealColor::OJAMA,
+            3 => RealColor::RED,
+            4 => RealColor::BLUE,
+            5 => RealColor::YELLOW,
+            6 => RealColor::GREEN,
+            7 => RealColor::PURPLE,
             _ => RealColor::EMPTY,
         }
     }

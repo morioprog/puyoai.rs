@@ -63,6 +63,20 @@ impl Color for PuyoColor {
         }
     }
 
+    fn from_u32(x: u32) -> PuyoColor {
+        match x {
+            0 => PuyoColor::EMPTY,
+            1 => PuyoColor::OJAMA,
+            2 => PuyoColor::WALL,
+            3 => PuyoColor::IRON,
+            4 => PuyoColor::RED,
+            5 => PuyoColor::BLUE,
+            6 => PuyoColor::YELLOW,
+            7 => PuyoColor::GREEN,
+            _ => PuyoColor::EMPTY,
+        }
+    }
+
     fn empty_color() -> PuyoColor {
         PuyoColor::EMPTY
     }

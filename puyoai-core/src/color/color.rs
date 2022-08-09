@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 pub trait Color: Clone + Copy + PartialEq<Self> + Display {
     fn from_byte(b: u8) -> Self;
+    fn from_u32(x: u32) -> Self;
     fn empty_color() -> Self;
     fn ojama_color() -> Self;
     fn wall_color() -> Self;
