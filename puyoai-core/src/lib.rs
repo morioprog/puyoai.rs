@@ -1,9 +1,8 @@
 #![feature(platform_intrinsics)]
-#![feature(simd, simd_ffi, link_llvm_intrinsics)]
-#![feature(cfg_target_feature)]
+#![feature(simd_ffi, link_llvm_intrinsics)]
+#![feature(portable_simd)]
 
 extern crate rand;
-extern crate x86intrin;
 
 pub mod color;
 pub mod column_puyo;

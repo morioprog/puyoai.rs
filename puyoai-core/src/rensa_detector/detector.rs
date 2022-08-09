@@ -85,8 +85,8 @@ pub fn detect_by_drop<Callback>(
     let mut visited = [[false; NUM_PUYO_COLORS]; field::MAP_WIDTH];
 
     let normal_color_bits = original_field.field().normal_color_bits();
-    let empty_bits = original_field.field().bits(PuyoColor::EMPTY);
-    let edge_bits = (normal_color_bits & empty_bits.expand_edge()).masked_field_12();
+    let empty_bits = unsafe { original_field.field().bits(PuyoColor::EMPTY) };
+    let edge_bits = unsafe { (normal_color_bits & empty_bits.expand_edge()).masked_field_12() };
 
     edge_bits.iterate_bit_position(|x, y| {
         debug_assert!(original_field.is_normal_color(x, y));

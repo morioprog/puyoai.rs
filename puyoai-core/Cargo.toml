@@ -5,4 +5,3 @@ authors = ["mayah"]
 
 [dependencies]
 rand = "^0.3.14"
-x86intrin = "^0.4.2"

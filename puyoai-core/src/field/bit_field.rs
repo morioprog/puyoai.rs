@@ -2,7 +2,10 @@ use color::{Color, PuyoColor};
 use field::{self, FieldIsEmpty, PuyoPlainField};
 use field_bit::FieldBit;
 use std::{self, mem};
-use x86intrin::*;
+
+#[cfg(target_arch = "x86_64")]
+use std::arch::x86_64::*;
+use std::simd::*;
 
 #[cfg(all(target_feature = "avx2", target_feature = "bmi2"))]
 use field_bit_256::FieldBit256;
@@ -25,13 +28,15 @@ pub struct BitField {
 impl BitField {
     pub fn new() -> BitField {
         BitField {
-            m: [
-                FieldBit::empty(),
-                FieldBit::from_values(
-                    0xFFFF, 0x8001, 0x8001, 0x8001, 0x8001, 0x8001, 0x8001, 0xFFFF,
-                ),
-                FieldBit::empty(),
-            ],
+            m: unsafe {
+                [
+                    FieldBit::empty(),
+                    FieldBit::from_values(
+                        0xFFFF, 0x8001, 0x8001, 0x8001, 0x8001, 0x8001, 0x8001, 0xFFFF,
+                    ),
+                    FieldBit::empty(),
+                ]
+            },
         }
     }
 
@@ -63,42 +68,44 @@ impl BitField {
     }
 
     pub fn color(&self, x: usize, y: usize) -> PuyoColor {
-        let b0: u8 = if self.m[0].get(x, y) { 1 } else { 0 };
-        let b1: u8 = if self.m[1].get(x, y) { 2 } else { 0 };
-        let b2: u8 = if self.m[2].get(x, y) { 4 } else { 0 };
+        let b0: u8 = if unsafe { self.m[0].get(x, y) } { 1 } else { 0 };
+        let b1: u8 = if unsafe { self.m[1].get(x, y) } { 2 } else { 0 };
+        let b2: u8 = if unsafe { self.m[2].get(x, y) } { 4 } else { 0 };
 
         unsafe { mem::transmute(b0 | b1 | b2) }
     }
 
     pub fn is_color(&self, x: usize, y: usize, c: PuyoColor) -> bool {
-        self.bits(c).get(x, y)
+        unsafe { self.bits(c).get(x, y) }
     }
 
     pub fn is_empty(&self, x: usize, y: usize) -> bool {
         let whole = self.m[0] | self.m[1] | self.m[2];
-        return !(whole.get(x, y));
+        return !unsafe { whole.get(x, y) };
     }
 
     pub fn is_normal_color(&self, x: usize, y: usize) -> bool {
-        self.m[2].get(x, y)
+        unsafe { self.m[2].get(x, y) }
     }
 
     pub fn set_color(&mut self, x: usize, y: usize, c: PuyoColor) {
         let cc = c as u8;
         for i in 0..3 {
             if (cc & (1 << i)) != 0 {
-                self.m[i as usize].set(x, y);
+                unsafe { self.m[i as usize].set(x, y) };
             } else {
-                self.m[i as usize].unset(x, y);
+                unsafe { self.m[i as usize].unset(x, y) };
             }
         }
     }
 
     /// Returns true if ZENKESHI.
     pub fn is_all_cleared(&self) -> bool {
-        (self.m[0] | self.m[1] | self.m[2])
-            .masked_field_13()
-            .is_empty()
+        unsafe {
+            (self.m[0] | self.m[1] | self.m[2])
+                .masked_field_13()
+                .is_empty()
+        }
     }
 
     pub fn count_connected(&self, x: usize, y: usize) -> usize {
@@ -107,8 +114,8 @@ impl BitField {
         }
 
         let c = self.color(x, y);
-        let color_bits = self.bits(c).masked_field_12();
-        FieldBit::from_onebit(x, y).expand(&color_bits).popcount()
+        let color_bits = unsafe { self.bits(c).masked_field_12() };
+        unsafe { FieldBit::from_onebit(x, y).expand(&color_bits).popcount() }
     }
 
     pub fn count_connected_max4(&self, x: usize, y: usize) -> usize {
@@ -117,13 +124,15 @@ impl BitField {
         }
 
         let c = self.color(x, y);
-        let color_bits = self.bits(c).masked_field_12();
+        let color_bits = unsafe { self.bits(c).masked_field_12() };
 
-        FieldBit::from_onebit(x, y)
-            .expand1(color_bits)
-            .expand1(color_bits)
-            .expand1(color_bits)
-            .popcount()
+        unsafe {
+            FieldBit::from_onebit(x, y)
+                .expand1(color_bits)
+                .expand1(color_bits)
+                .expand1(color_bits)
+                .popcount()
+        }
     }
 
     pub fn count_connected_max4_with_color(&self, x: usize, y: usize, c: PuyoColor) -> usize {
@@ -131,13 +140,15 @@ impl BitField {
             return 0;
         }
 
-        let color_bits = self.bits(c).masked_field_12();
+        let color_bits = unsafe { self.bits(c).masked_field_12() };
 
-        FieldBit::from_onebit(x, y)
-            .expand1(color_bits)
-            .expand1(color_bits)
-            .expand1(color_bits)
-            .popcount()
+        unsafe {
+            FieldBit::from_onebit(x, y)
+                .expand1(color_bits)
+                .expand1(color_bits)
+                .expand1(color_bits)
+                .popcount()
+        }
     }
 
     /// Returns FieldBit where normal color bit is set.
@@ -145,7 +156,7 @@ impl BitField {
         self.m[2]
     }
 
-    pub fn bits(&self, c: PuyoColor) -> FieldBit {
+    pub unsafe fn bits(&self, c: PuyoColor) -> FieldBit {
         let r0 = self.m[0].as_m128i();
         let r1 = self.m[1].as_m128i();
         let r2 = self.m[2].as_m128i();
@@ -153,36 +164,36 @@ impl BitField {
         let v = match c {
             PuyoColor::EMPTY => {
                 // 0
-                let x = mm_or_si128(mm_or_si128(r0, r1), r2);
-                mm_xor_si128(x, mm_setr_epi32(!0, !0, !0, !0))
+                let x = _mm_or_si128(_mm_or_si128(r0, r1), r2);
+                _mm_xor_si128(x, _mm_setr_epi32(!0, !0, !0, !0))
             }
             PuyoColor::OJAMA => {
                 // 1
-                mm_andnot_si128(r2, mm_andnot_si128(r1, r0))
+                _mm_andnot_si128(r2, _mm_andnot_si128(r1, r0))
             }
             PuyoColor::WALL => {
                 // 2
-                mm_andnot_si128(r2, mm_andnot_si128(r0, r1))
+                _mm_andnot_si128(r2, _mm_andnot_si128(r0, r1))
             }
             PuyoColor::IRON => {
                 // 3
-                mm_andnot_si128(r2, mm_and_si128(r0, r1))
+                _mm_andnot_si128(r2, _mm_and_si128(r0, r1))
             }
             PuyoColor::RED => {
                 // 4
-                mm_andnot_si128(r0, mm_andnot_si128(r1, r2))
+                _mm_andnot_si128(r0, _mm_andnot_si128(r1, r2))
             }
             PuyoColor::BLUE => {
                 // 5
-                mm_and_si128(r0, mm_andnot_si128(r1, r2))
+                _mm_and_si128(r0, _mm_andnot_si128(r1, r2))
             }
             PuyoColor::YELLOW => {
                 // 6
-                mm_andnot_si128(r0, mm_and_si128(r1, r2))
+                _mm_andnot_si128(r0, _mm_and_si128(r1, r2))
             }
             PuyoColor::GREEN => {
                 // 7
-                mm_and_si128(r0, mm_and_si128(r1, r2))
+                _mm_and_si128(r0, _mm_and_si128(r1, r2))
             }
         };
 
@@ -198,20 +209,22 @@ impl BitField {
             return false;
         }
 
-        let color_bits = self.bits(c).masked_field_12();
+        let color_bits = unsafe { self.bits(c).masked_field_12() };
         let single = FieldBit::from_onebit(x, y);
-        !single
-            .expand_edge()
-            .mask(color_bits)
-            .not_mask(single)
-            .is_empty()
+        !unsafe {
+            single
+                .expand_edge()
+                .mask(color_bits)
+                .not_mask(single)
+                .is_empty()
+        }
     }
 
     pub fn escape_invisible(&mut self) -> BitField {
         let mut escaped = unsafe { BitField::uninitialized() };
         for i in 0..3 {
-            escaped.m[i] = self.m[i].not_masked_field_13();
-            self.m[i] = self.m[i].masked_field_13();
+            escaped.m[i] = unsafe { self.m[i].not_masked_field_13() };
+            self.m[i] = unsafe { self.m[i].masked_field_13() };
         }
 
         escaped
@@ -219,7 +232,7 @@ impl BitField {
 
     pub fn recover_invisible(&mut self, bf: &BitField) {
         for i in 0..3 {
-            self.m[i].set_all(bf.m[i]);
+            unsafe { self.m[i].set_all(bf.m[i]) };
         }
     }
 }
@@ -255,7 +268,7 @@ impl BitField {
             score += nth_chain_score;
             frames += frame::FRAMES_VANISH_ANIMATION;
 
-            let max_drops = self.drop_after_vanish(erased, tracker);
+            let max_drops = unsafe { self.drop_after_vanish(erased, tracker) };
             if max_drops > 0 {
                 frames += frame::FRAMES_TO_DROP_FAST[max_drops] + frame::FRAMES_GROUNDING;
             } else {
@@ -274,7 +287,7 @@ impl BitField {
         let mut erased = unsafe { FieldBit::uninitialized() };
         while self.vanish_fast(current_chain, &mut erased, tracker) {
             current_chain += 1;
-            self.drop_after_vanish_fast(erased, tracker);
+            unsafe { self.drop_after_vanish_fast(erased, tracker) };
         }
 
         self.recover_invisible(&escaped);
@@ -287,16 +300,16 @@ impl BitField {
         erased: &mut FieldBit,
         tracker: &mut T,
     ) -> bool {
-        let mut erased256 = FieldBit256::empty();
+        let mut erased256 = unsafe { FieldBit256::empty() };
         let mut did_erase = false;
 
         // RED (100) & BLUE (101)
         {
-            let t = self.m[1].andnot(self.m[2]).masked_field_12();
-            let mask = FieldBit256::from_low_high(self.m[0].andnot(t), self.m[0] & t);
+            let t = unsafe { self.m[1].andnot(self.m[2]).masked_field_12() };
+            let mask = unsafe { FieldBit256::from_low_high(self.m[0].andnot(t), self.m[0] & t) };
 
             let mut vanishing = unsafe { FieldBit256::uninitialized() };
-            if mask.find_vanishing_bits(&mut vanishing) {
+            if unsafe { mask.find_vanishing_bits(&mut vanishing) } {
                 erased256.set_all(vanishing);
                 did_erase = true;
             }
@@ -304,29 +317,32 @@ impl BitField {
 
         // YELLOW (110) & GREEN (111)
         {
-            let t = (self.m[1] & self.m[2]).masked_field_12();
-            let mask = FieldBit256::from_low_high(self.m[0].andnot(t), self.m[0] & t);
+            let t = unsafe { (self.m[1] & self.m[2]).masked_field_12() };
+            let mask = unsafe { FieldBit256::from_low_high(self.m[0].andnot(t), self.m[0] & t) };
 
             let mut vanishing = unsafe { FieldBit256::uninitialized() };
-            if mask.find_vanishing_bits(&mut vanishing) {
+            if unsafe { mask.find_vanishing_bits(&mut vanishing) } {
                 erased256.set_all(vanishing);
                 did_erase = true;
             }
         }
 
         if !did_erase {
-            *erased = FieldBit::empty();
+            *erased = unsafe { FieldBit::empty() };
             return false;
         }
 
-        *erased = erased256.low() | erased256.high();
+        *erased = unsafe { erased256.low() | erased256.high() };
 
-        let ojama_erased = erased
-            .expand1(self.bits(PuyoColor::OJAMA))
-            .masked_field_12();
-        erased.set_all(ojama_erased);
+        unsafe {
+            let ojama_erased = erased
+                .expand1(self.bits(PuyoColor::OJAMA))
+                .masked_field_12();
+            erased.set_all(ojama_erased);
 
-        tracker.track_vanish(current_chain, erased, &ojama_erased);
+            tracker.track_vanish(current_chain, erased, &ojama_erased);
+        }
+
         true
     }
 
@@ -336,7 +352,7 @@ impl BitField {
         erased: &mut FieldBit,
         tracker: &mut T,
     ) -> usize {
-        let mut erased256 = FieldBit256::empty();
+        let mut erased256 = unsafe { FieldBit256::empty() };
 
         let mut num_erased_puyos = 0;
         let mut num_colors = 0;
@@ -344,19 +360,21 @@ impl BitField {
         let mut did_erase = false;
 
         for i in 0..2 {
-            let t = (if i == 0 {
-                self.m[1].andnot(self.m[2])
-            } else {
-                self.m[1] & self.m[2]
-            })
-            .masked_field_12();
+            let t = unsafe {
+                (if i == 0 {
+                    self.m[1].andnot(self.m[2])
+                } else {
+                    self.m[1] & self.m[2]
+                })
+                .masked_field_12()
+            };
 
             let high_mask = self.m[0] & t;
-            let low_mask = self.m[0].andnot(t);
+            let low_mask = unsafe { self.m[0].andnot(t) };
 
-            let mask = FieldBit256::from_low_high(low_mask, high_mask);
+            let mask = unsafe { FieldBit256::from_low_high(low_mask, high_mask) };
             let mut vanishing = unsafe { FieldBit256::uninitialized() };
-            if !mask.find_vanishing_bits(&mut vanishing) {
+            if !unsafe { mask.find_vanishing_bits(&mut vanishing) } {
                 continue;
             }
             erased256.set_all(vanishing);
@@ -370,13 +388,15 @@ impl BitField {
                 if high_count <= 7 {
                     long_bonus_coef += score::long_bonus(high_count);
                 } else {
-                    let high = vanishing.high();
+                    let high = unsafe { vanishing.high() };
                     // slowpath
-                    high.iterate_bit_with_masking(|x: FieldBit| -> FieldBit {
-                        let expanded = x.expand(&high_mask);
-                        long_bonus_coef += score::long_bonus(expanded.popcount());
-                        expanded
-                    });
+                    unsafe {
+                        high.iterate_bit_with_masking(|x: FieldBit| -> FieldBit {
+                            let expanded = x.expand(&high_mask);
+                            long_bonus_coef += score::long_bonus(expanded.popcount());
+                            expanded
+                        });
+                    }
                 }
             }
 
@@ -386,23 +406,25 @@ impl BitField {
                 if low_count <= 7 {
                     long_bonus_coef += score::long_bonus(low_count);
                 } else {
-                    let low = vanishing.low();
+                    let low = unsafe { vanishing.low() };
                     // slowpath
-                    low.iterate_bit_with_masking(|x: FieldBit| -> FieldBit {
-                        let expanded = x.expand(&low_mask);
-                        long_bonus_coef += score::long_bonus(expanded.popcount());
-                        expanded
-                    });
+                    unsafe {
+                        low.iterate_bit_with_masking(|x: FieldBit| -> FieldBit {
+                            let expanded = x.expand(&low_mask);
+                            long_bonus_coef += score::long_bonus(expanded.popcount());
+                            expanded
+                        });
+                    }
                 }
             }
         }
 
         if !did_erase {
-            *erased = FieldBit::empty();
+            *erased = unsafe { FieldBit::empty() };
             return 0;
         }
 
-        *erased = erased256.low() | erased256.high();
+        *erased = unsafe { erased256.low() | erased256.high() };
 
         let color_bonus_coef = score::color_bonus(num_colors);
         let chain_bonus_coef = score::chain_bonus(current_chain);
@@ -417,31 +439,33 @@ impl BitField {
         );
 
         // Removes ojama.
-        let ojama_erased = erased
-            .expand1(self.bits(PuyoColor::OJAMA))
-            .masked_field_12();
-        erased.set_all(ojama_erased);
+        unsafe {
+            let ojama_erased = erased
+                .expand1(self.bits(PuyoColor::OJAMA))
+                .masked_field_12();
+            erased.set_all(ojama_erased);
 
-        tracker.track_vanish(current_chain, erased, &ojama_erased);
+            tracker.track_vanish(current_chain, erased, &ojama_erased);
+        }
 
         10 * num_erased_puyos * rensa_bonus_coef
     }
 
-    pub fn drop_after_vanish<T: RensaTracker>(
+    pub unsafe fn drop_after_vanish<T: RensaTracker>(
         &mut self,
         erased: FieldBit,
         tracker: &mut T,
     ) -> usize {
         // Set 1 at non-empty position.
         // Remove 1 bits from the positions where they are erased.
-        let nonempty = mm_andnot_si128(
+        let nonempty = _mm_andnot_si128(
             erased.as_m128i(),
             (self.m[0] | self.m[1] | self.m[2]).as_m128i(),
         );
 
         // Find the holes. The number of holes for each column is the number of
         // drops of the column.
-        let holes = mm_and_si128(sseext::mm_porr_epi16(nonempty), erased.as_m128i());
+        let holes = _mm_and_si128(sseext::mm_porr_epi16(nonempty), erased.as_m128i());
         let num_holes = sseext::mm_popcnt_epi16(holes);
         let max_drops = sseext::mm_hmax_epu16(num_holes);
 
@@ -450,72 +474,52 @@ impl BitField {
         max_drops as usize
     }
 
-    pub fn drop_after_vanish_fast<T: RensaTracker>(&mut self, erased: FieldBit, tracker: &mut T) {
+    pub unsafe fn drop_after_vanish_fast<T: RensaTracker>(
+        &mut self,
+        erased: FieldBit,
+        tracker: &mut T,
+    ) {
         let ones = sseext::mm_setone_si128();
 
-        let t = mm_xor_si128(erased.as_m128i(), ones);
-        let old_low_bits = t.as_u64x2().extract(0);
-        let old_high_bits = t.as_u64x2().extract(1);
+        let (old_low_bits, old_high_bits) = {
+            let t: u64x2 = _mm_xor_si128(erased.as_m128i(), ones).into();
+            (t[0], t[1])
+        };
 
-        let shift = mm256_cvtepu16_epi32(sseext::mm_popcnt_epi16(erased.as_m128i()));
-        let half_ones = mm256_cvtepu16_epi32(ones);
-        let mut shifted = mm256_srlv_epi32(half_ones, shift);
-        shifted = mm256_packus_epi32(shifted, shifted);
+        let (new_low_bits, new_high_bits) = {
+            let shifted: u64x4 = {
+                let shift = _mm256_cvtepu16_epi32(sseext::mm_popcnt_epi16(erased.as_m128i()));
+                let half_ones = _mm256_cvtepu16_epi32(ones);
+                let shifted = _mm256_srlv_epi32(half_ones, shift);
+                _mm256_packus_epi32(shifted, shifted).into()
+            };
+            (shifted[0], shifted[2])
+        };
 
-        let new_low_bits = shifted.as_u64x4().extract(0);
-        let new_high_bits = shifted.as_u64x4().extract(2);
-
-        let mut d = [
-            self.m[0].as_m128i().as_u64x2(),
-            self.m[1].as_m128i().as_u64x2(),
-            self.m[2].as_m128i().as_u64x2(),
+        let mut d: [u64x2; 3] = [
+            self.m[0].as_m128i().into(),
+            self.m[1].as_m128i().into(),
+            self.m[2].as_m128i().into(),
         ];
 
         if new_low_bits != 0xFFFFFFFFFFFFFFFF {
-            d[0] = d[0].insert(
-                0,
-                pdep_u64(pext_u64(d[0].extract(0), old_low_bits), new_low_bits),
-            );
-            d[1] = d[1].insert(
-                0,
-                pdep_u64(pext_u64(d[1].extract(0), old_low_bits), new_low_bits),
-            );
-            d[2] = d[2].insert(
-                0,
-                pdep_u64(pext_u64(d[2].extract(0), old_low_bits), new_low_bits),
-            );
+            d[0][0] = _pdep_u64(_pext_u64(d[0][0], old_low_bits), new_low_bits);
+            d[1][0] = _pdep_u64(_pext_u64(d[1][0], old_low_bits), new_low_bits);
+            d[2][0] = _pdep_u64(_pext_u64(d[2][0], old_low_bits), new_low_bits);
             if new_high_bits != 0xFFFFFFFFFFFFFFFF {
-                d[0] = d[0].insert(
-                    1,
-                    pdep_u64(pext_u64(d[0].extract(1), old_high_bits), new_high_bits),
-                );
-                d[1] = d[1].insert(
-                    1,
-                    pdep_u64(pext_u64(d[1].extract(1), old_high_bits), new_high_bits),
-                );
-                d[2] = d[2].insert(
-                    1,
-                    pdep_u64(pext_u64(d[2].extract(1), old_high_bits), new_high_bits),
-                );
+                d[0][1] = _pdep_u64(_pext_u64(d[0][1], old_high_bits), new_high_bits);
+                d[1][1] = _pdep_u64(_pext_u64(d[1][1], old_high_bits), new_high_bits);
+                d[2][1] = _pdep_u64(_pext_u64(d[2][1], old_high_bits), new_high_bits);
             }
         } else {
-            d[0] = d[0].insert(
-                1,
-                pdep_u64(pext_u64(d[0].extract(1), old_high_bits), new_high_bits),
-            );
-            d[1] = d[1].insert(
-                1,
-                pdep_u64(pext_u64(d[1].extract(1), old_high_bits), new_high_bits),
-            );
-            d[2] = d[2].insert(
-                1,
-                pdep_u64(pext_u64(d[2].extract(1), old_high_bits), new_high_bits),
-            );
+            d[0][1] = _pdep_u64(_pext_u64(d[0][1], old_high_bits), new_high_bits);
+            d[1][1] = _pdep_u64(_pext_u64(d[1][1], old_high_bits), new_high_bits);
+            d[2][1] = _pdep_u64(_pext_u64(d[2][1], old_high_bits), new_high_bits);
         }
 
-        self.m[0] = FieldBit::new(d[0].as_m128i());
-        self.m[1] = FieldBit::new(d[1].as_m128i());
-        self.m[2] = FieldBit::new(d[2].as_m128i());
+        self.m[0] = FieldBit::new(d[0].into());
+        self.m[1] = FieldBit::new(d[1].into());
+        self.m[2] = FieldBit::new(d[2].into());
 
         tracker.track_drop(old_low_bits, old_high_bits, new_low_bits, new_high_bits);
     }
@@ -640,7 +644,7 @@ mod tests {
         for x in 0..field::MAP_WIDTH {
             for y in 0..field::MAP_HEIGHT {
                 for c in color::PuyoColor::all_colors() {
-                    assert_eq!(bf.bits(*c).get(x, y), *c == bf.color(x, y));
+                    assert_eq!(unsafe { bf.bits(*c).get(x, y) }, *c == bf.color(x, y));
                     assert_eq!(bf.is_color(x, y, *c), bf.is_color(x, y, *c));
                 }
 
@@ -914,7 +918,7 @@ mod tests_simulation {
         let mut tracker = RensaNonTracker::new();
 
         let invisible = bf.escape_invisible();
-        bf.drop_after_vanish_fast(erased, &mut tracker);
+        unsafe { bf.drop_after_vanish_fast(erased, &mut tracker) };
         bf.recover_invisible(&invisible);
 
         let expected = BitField::from_str(concat!(
