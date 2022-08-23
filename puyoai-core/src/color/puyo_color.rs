@@ -52,7 +52,7 @@ impl Color for PuyoColor {
     fn from_byte(c: u8) -> PuyoColor {
         match c {
             b' ' | b'.' => PuyoColor::EMPTY,
-            b'O' | b'@' => PuyoColor::OJAMA,
+            b'O' | b'o' | b'@' => PuyoColor::OJAMA,
             b'#' => PuyoColor::WALL,
             b'&' => PuyoColor::IRON,
             b'R' | b'r' => PuyoColor::RED,
