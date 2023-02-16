@@ -69,6 +69,13 @@ impl PuyoController {
 
         return true;
     }
+
+    pub fn legal_actions<F: FieldHeight + FieldIsEmpty>(&self, field: &F) -> Vec<&Decision> {
+        Decision::all_valid_decisions()
+            .iter()
+            .filter(|decision| self.is_reachable(field, decision))
+            .collect()
+    }
 }
 
 #[cfg(test)]
