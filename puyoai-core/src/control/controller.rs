@@ -4,7 +4,7 @@ use field::{FieldHeight, FieldIsEmpty};
 pub struct PuyoController {}
 
 impl PuyoController {
-    pub fn new() -> PuyoController {
+    pub const fn new() -> PuyoController {
         PuyoController {}
     }
 
